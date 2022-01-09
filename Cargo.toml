@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 eyre = "0.6.5"
+once_cell = "1.9.0"
 
 [dependencies.windows]
 version = "0.29.0"
@@ -18,15 +19,9 @@ features = [
     "build",
     "ApplicationModel_Activation",
     "Win32_System_Com",
-    "UI_Xaml_Controls",
-    "UI_Xaml",
-    "UI_Xaml_Hosting",
-    "UI_Xaml_Media",
-    "Win32_System_WinRT_Xaml",
 
     "Win32_System_LibraryLoader",
     "Win32_Graphics_Gdi",
-    "Foundation_Collections",
 ]
 
 [build-dependencies]

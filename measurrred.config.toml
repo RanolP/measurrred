@@ -1,0 +1,12 @@
+[panel.left]
+items = ["cpu", "ram", "network-up", "network-down"]
+alignmnet = [1, 1, 2, 2]
+
+[panel.right]
+items = []
+alignment = []
+
+[component.default]
+font = "Pretendard"
+
+[component.cpu]

@@ -47,6 +47,7 @@ version = "0.1.0"
 dependencies = [
  "embed-resource",
  "eyre",
+ "once_cell",
  "windows",
 ]
 
