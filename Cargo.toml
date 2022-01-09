@@ -1,0 +1,33 @@
+[package]
+name = "measurrred"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eyre = "0.6.5"
+
+[dependencies.windows]
+version = "0.29.0"
+features = [
+    "alloc",
+
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+
+    "std",
+    "build",
+    "ApplicationModel_Activation",
+    "Win32_System_Com",
+    "UI_Xaml_Controls",
+    "UI_Xaml",
+    "UI_Xaml_Hosting",
+    "UI_Xaml_Media",
+    "Win32_System_WinRT_Xaml",
+
+    "Win32_System_LibraryLoader",
+    "Win32_Graphics_Gdi",
+    "Foundation_Collections",
+]
+
+[build-dependencies]
+embed-resource = "1.6.5"
