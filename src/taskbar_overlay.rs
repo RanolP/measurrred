@@ -5,13 +5,21 @@ use windows::Win32::{
     Foundation::{GetLastError, HWND, LPARAM, LRESULT, PWSTR, RECT, WPARAM},
     Graphics::Gdi::{
         BeginPaint, CreateSolidBrush, EndPaint, FillRect, RedrawWindow, SetBkMode, SetTextColor,
-        TextOutW, UpdateWindow, PAINTSTRUCT, RDW_INVALIDATE, RDW_UPDATENOW, TRANSPARENT,
+        TextOutW, PAINTSTRUCT, RDW_INVALIDATE, RDW_UPDATENOW, TRANSPARENT,
     },
-    System::LibraryLoader::GetModuleHandleW,
+    System::{
+        LibraryLoader::GetModuleHandleW,
+        Performance::{
+            PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
+            PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
+        },
+        SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX},
+    },
     UI::WindowsAndMessaging::{
-        CreateWindowExW, DefWindowProcW, GetClientRect, PostQuitMessage, RegisterClassW,
-        SetLayeredWindowAttributes, ShowWindow, CS_HREDRAW, CS_VREDRAW, LWA_COLORKEY, SW_SHOW,
-        WM_DESTROY, WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
+        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
+        PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow, TranslateMessage,
+        CS_HREDRAW, CS_VREDRAW, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_PAINT, WNDCLASSW,
+        WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
     },
 };
 
@@ -131,6 +139,28 @@ impl TaskbarOverlay {
 
         Ok(())
     }
+
+    pub fn begin_event_loop(&self) -> eyre::Result<()> {
+        let mut message = MSG::default();
+        let mut message_status: i32;
+        while unsafe {
+            message_status = GetMessageW(&mut message, 0, 0, 0).0;
+            message_status != 0
+        } {
+            if message_status == -1 {
+                eyre::bail!(
+                    "Failed to get message on overlay window: Error Code 0x{:x}",
+                    unsafe { GetLastError() }
+                );
+            }
+            unsafe {
+                TranslateMessage(&message);
+                // its return value, LRESULT, is generally ignored
+                DispatchMessageW(&mut message);
+            }
+        }
+        Ok(())
+    }
 }
 
 macro_rules! rgb {
@@ -145,7 +175,11 @@ unsafe extern "system" fn wndproc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    static mut test: u64 = 0;
+    static mut TEST: u64 = 0;
+    static mut QUERY: isize = 0;
+
+    static mut CPU_COUNTER: isize = 0;
+    let mut cpu_usage_value = 0.0;
 
     let overlay = match TASKBAR_OVERLAY.get() {
         Some(overlay) => overlay,
@@ -153,6 +187,44 @@ unsafe extern "system" fn wndproc(
             return DefWindowProcW(window, message, wparam, lparam);
         }
     };
+    loop {
+        if TEST == 0 {
+            if PdhOpenQueryW(PWSTR(null_mut()), 0, &mut QUERY) != 0 {
+                println!("PdhOpenQuery failed");
+                break;
+            }
+
+            if PdhAddEnglishCounterW(
+                QUERY,
+                r"\Processor(_Total)\% Processor Time",
+                0,
+                &mut CPU_COUNTER,
+            ) != 0
+            {
+                println!("PdhAddCounter failed");
+                break;
+            }
+
+            TEST += 1;
+        }
+        if PdhCollectQueryData(QUERY) != 0 {
+            println!("PdhCollectQueryData failed, {}", GetLastError());
+            break;
+        }
+
+        let mut value = PDH_FMT_COUNTERVALUE::default();
+        PdhGetFormattedCounterValue(CPU_COUNTER, PDH_FMT_DOUBLE, null_mut(), &mut value);
+        cpu_usage_value = value.Anonymous.doubleValue;
+
+        break;
+    }
+
+    let mut mem = MEMORYSTATUSEX::default();
+    mem.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
+
+    if GlobalMemoryStatusEx(&mut mem).0 == 0 {
+        println!("wtf, {}", GetLastError());
+    }
 
     match message as u32 {
         WM_PAINT => {
@@ -162,11 +234,22 @@ unsafe extern "system" fn wndproc(
             let hdc = BeginPaint(window, &mut ps);
             FillRect(hdc, &rect, CreateSolidBrush(overlay.background_color));
             SetBkMode(hdc, TRANSPARENT);
-            SetTextColor(hdc, rgb!(255, 0, 0));
-            test += 1;
-            let text = format!("{}", test);
+
+            SetTextColor(hdc, rgb!(127, 255, 127));
+            let text = format!("CPU {:.1}%", cpu_usage_value);
             let text: &str = &text;
-            TextOutW(hdc, 16, 16, text, text.len() as _);
+            TextOutW(hdc, 16, 8, text, text.len() as _);
+
+            SetTextColor(hdc, rgb!(127, 127, 255));
+            let text = format!(
+                "RAM {:.1}% ({:.1} / {:.1} GB)",
+                (mem.ullTotalPhys - mem.ullAvailPhys) as f64 / mem.ullTotalPhys as f64 * 100.0,
+                (mem.ullTotalPhys - mem.ullAvailPhys) as f64 / 1024.0 / 1024.0 / 1024.0,
+                mem.ullTotalPhys as f64 / 1024.0 / 1024.0 / 1024.0
+            );
+            let text: &str = &text;
+            TextOutW(hdc, 16, 24, text, text.len() as _);
+
             EndPaint(hdc, &ps);
             0
         }
