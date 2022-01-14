@@ -9,6 +9,7 @@ use taskbar_overlay::TaskbarOverlay;
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
 
 mod component;
+mod data_source;
 mod position;
 mod taskbar;
 mod taskbar_overlay;

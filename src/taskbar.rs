@@ -15,21 +15,13 @@ impl Taskbar {
     pub fn try_initialize() -> eyre::Result<Taskbar> {
         TASKBAR
             .get_or_try_init(|| {
-                let taskbar_handle = unsafe { FindWindowW("Shell_TrayWnd", PWSTR(null_mut())) };
-                if taskbar_handle == 0 {
-                    eyre::bail!("Failed to find Shell_TrayWnd: Error Code 0x{:x}", unsafe {
-                        GetLastError()
-                    });
-                }
+                let taskbar_handle =
+                    unsafe { FindWindowW("Shell_TrayWnd", PWSTR(null_mut())) }.ok()?;
 
-                let bar_handle =
-                    unsafe { FindWindowExW(taskbar_handle, 0, "ReBarWindow32", PWSTR(null_mut())) };
-                if bar_handle == 0 {
-                    eyre::bail!(
-                        "Failed to find ReBarWindow32 in Shell_TrayWnd: Error Code 0x{:x}",
-                        unsafe { GetLastError() }
-                    );
+                let bar_handle = unsafe {
+                    FindWindowExW(taskbar_handle, HWND(0), "ReBarWindow32", PWSTR(null_mut()))
                 }
+                .ok()?;
 
                 Ok(Taskbar(bar_handle))
             })
@@ -38,12 +30,7 @@ impl Taskbar {
 
     pub fn rect(&self) -> eyre::Result<RECT> {
         let mut result = RECT::default();
-        let failed = unsafe { GetWindowRect(self.0, &mut result).0 == 0 };
-        if failed {
-            eyre::bail!("Failed to get Taskbar RECT: Error Code 0x{:x}", unsafe {
-                GetLastError()
-            });
-        }
+        unsafe { GetWindowRect(self.0, &mut result) }.ok()?;
 
         Ok(result)
     }
