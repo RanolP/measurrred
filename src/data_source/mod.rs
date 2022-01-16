@@ -7,11 +7,10 @@ pub trait DataSource {
 
     fn update(&mut self) -> eyre::Result<()>;
 
-    fn query(&mut self, query: String, preferred_format: PreferredDataFormat)
-        -> eyre::Result<Data>;
+    fn query(&mut self, query: String, preferred_format: PreferredDataType) -> eyre::Result<Data>;
 
     fn query_int(&mut self, query: String, strict: bool) -> eyre::Result<i64> {
-        Ok(match self.query(query, PreferredDataFormat::Int)? {
+        Ok(match self.query(query, PreferredDataType::Int)? {
             Data::Int(v) => v,
             Data::Float(v) => {
                 if strict {
@@ -38,7 +37,7 @@ pub trait DataSource {
     }
 
     fn query_float(&mut self, query: String, strict: bool) -> eyre::Result<f64> {
-        Ok(match self.query(query, PreferredDataFormat::Float)? {
+        Ok(match self.query(query, PreferredDataType::Float)? {
             Data::Int(v) => {
                 if strict {
                     eyre::bail!("Expected Float but Int received")
@@ -65,7 +64,7 @@ pub trait DataSource {
     }
 
     fn query_bool(&mut self, query: String, strict: bool) -> eyre::Result<bool> {
-        Ok(match self.query(query, PreferredDataFormat::Boolean)? {
+        Ok(match self.query(query, PreferredDataType::Boolean)? {
             Data::Int(v) => {
                 if strict {
                     eyre::bail!("Expected Bool but Int received")
@@ -92,7 +91,7 @@ pub trait DataSource {
     }
 }
 
-pub enum PreferredDataFormat {
+pub enum PreferredDataType {
     Int,
     Float,
     Boolean,

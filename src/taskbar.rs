@@ -28,6 +28,10 @@ impl Taskbar {
             .map(Clone::clone)
     }
 
+    pub fn get() -> Option<&'static Taskbar> {
+        TASKBAR.get()
+    }
+
     pub fn rect(&self) -> eyre::Result<RECT> {
         let mut result = RECT::default();
         unsafe { GetWindowRect(self.0, &mut result) }.ok()?;

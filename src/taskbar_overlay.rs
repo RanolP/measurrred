@@ -1,11 +1,14 @@
 use std::ptr::null_mut;
 
 use once_cell::sync::{Lazy, OnceCell};
+use tiny_skia::{Paint, Pixmap, PremultipliedColorU8, Rect, Transform};
 use windows::Win32::{
     Foundation::{GetLastError, HWND, LPARAM, LRESULT, PWSTR, RECT, WPARAM},
     Graphics::Gdi::{
-        BeginPaint, CreateSolidBrush, EndPaint, FillRect, RedrawWindow, SetBkMode, SetTextColor,
-        TextOutW, HRGN, PAINTSTRUCT, RDW_INVALIDATE, RDW_UPDATENOW, TRANSPARENT,
+        BeginPaint, BitBlt, CreateBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC,
+        DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, SetTextColor,
+        TextOutW, HGDIOBJ, HRGN, MERGECOPY, MERGEPAINT, PAINTSTRUCT, RDW_INVALIDATE, RDW_UPDATENOW,
+        SRCPAINT, TRANSPARENT,
     },
     System::{
         LibraryLoader::GetModuleHandleW,
@@ -24,8 +27,11 @@ use windows::Win32::{
 };
 
 use crate::{
-    data_source::{Data, DataSource, PdhDataSource, PreferredDataFormat},
+    component::Component,
+    data_source::{Data, DataSource, PdhDataSource, PreferredDataType},
+    system::{HorizontalPosition, Length, VerticalPosition},
     taskbar::Taskbar,
+    widget::Widget,
 };
 
 static TASKBAR_OVERLAY: OnceCell<TaskbarOverlay> = OnceCell::new();
@@ -167,6 +173,11 @@ unsafe extern "system" fn wndproc(
 ) -> LRESULT {
     static mut PDH: Lazy<PdhDataSource> =
         Lazy::new(|| PdhDataSource::try_initialize().expect("Can initialize pdh data source"));
+    static mut WIDGET: Lazy<Widget> = Lazy::new(|| Widget {
+        x: HorizontalPosition::Left(Length::Pixel(8)),
+        y: VerticalPosition::Center,
+        components: vec![Component::HBox()],
+    });
 
     let overlay = match TASKBAR_OVERLAY.get() {
         Some(overlay) => overlay,
@@ -211,6 +222,35 @@ unsafe extern "system" fn wndproc(
             );
             let text: &str = &text;
             TextOutW(&hdc, 16, 24, text, text.len() as _);
+
+            let taskbar_rect = Taskbar::get().unwrap().rect().unwrap();
+            let width = taskbar_rect.right - taskbar_rect.left;
+            let height = taskbar_rect.bottom - taskbar_rect.top;
+            let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
+            let paint = Paint::default();
+            pixmap.fill_rect(
+                Rect::from_xywh(0.0, 0.0, width as f32, height as f32).unwrap(),
+                &paint,
+                Transform::default(),
+                None,
+            );
+            WIDGET.render(&mut pixmap).unwrap();
+            let data: Vec<u32> = pixmap
+                .pixels()
+                .iter()
+                .map(|color| {
+                    ((color.blue() as u32) << 0)
+                        | ((color.green() as u32) << 8)
+                        | ((color.red() as u32) << 16)
+                        | ((color.alpha() as u32) << 24)
+                })
+                .collect();
+            let dc = CreateCompatibleDC(hdc);
+            let bitmap = CreateBitmap(width, height, 1, 32, data.as_ptr() as _);
+            SelectObject(dc, bitmap);
+            BitBlt(hdc, 0, 0, width, height, dc, 0, 0, SRCPAINT);
+            DeleteObject(bitmap);
+            DeleteDC(dc);
 
             EndPaint(window, &ps);
             LRESULT(0)

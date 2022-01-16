@@ -1,11 +1,32 @@
-use crate::position::{HorizontalPosition, Length, VerticalPosition};
+use usvg::{Node, Options, Tree};
 
-pub trait Component {
-    fn width(&self) -> Length;
-    fn height(&self) -> Length;
+pub enum Component {
+    HBox(),
+    VBox(),
+    DataText(),
+}
 
-    fn x(&self) -> HorizontalPosition;
-    fn y(&self) -> VerticalPosition;
-
-    fn render(&self);
+impl Component {
+    pub fn render(&mut self) -> Node {
+        let mut options = Options::default();
+        options.fontdb.load_system_fonts();
+        #[cfg(target_os = "windows")]
+        {
+            let local_appdata = std::env::var("LocalAppdata").unwrap();
+            options.fontdb.load_fonts_dir(
+                std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"),
+            );
+        }
+        Tree::from_str(
+            r#"
+                <svg version="1.1" width="100" height="32" xmlns="http://www.w3.org/2000/svg">
+                    <text id="root" fill="red" font-size="24" font-family="Noto Sans CJK KR Bold">Hello</text>
+                </svg>
+            "#,
+            &options.to_ref(),
+        )
+        .unwrap()
+        .node_by_id("root")
+        .unwrap()
+    }
 }

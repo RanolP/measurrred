@@ -10,15 +10,10 @@ use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
 
 mod component;
 mod data_source;
-mod position;
+mod system;
 mod taskbar;
 mod taskbar_overlay;
-
-macro_rules! rgb {
-    ($r:expr, $g:expr, $b:expr) => {
-        ((($r) | (($g) << 8)) | (($b) << 16))
-    };
-}
+mod widget;
 
 fn main() -> eyre::Result<()> {
     unsafe {

@@ -4,11 +4,12 @@ use windows::Win32::{
     Foundation::{GetLastError, PWSTR},
     System::Performance::{
         PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
-        PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_FMT_LONG, PDH_INVALID_DATA,
+        PDH_CALC_NEGATIVE_DENOMINATOR, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_FMT_LONG,
+        PDH_INVALID_DATA,
     },
 };
 
-use super::{Data, DataSource, PreferredDataFormat};
+use super::{Data, DataSource, PreferredDataType};
 
 pub struct PdhDataSource {
     query: isize,
@@ -52,11 +53,7 @@ impl DataSource for PdhDataSource {
         Ok(())
     }
 
-    fn query(
-        &mut self,
-        query: String,
-        preferred_format: PreferredDataFormat,
-    ) -> eyre::Result<Data> {
+    fn query(&mut self, query: String, preferred_format: PreferredDataType) -> eyre::Result<Data> {
         let (counter, is_new) = if let Some(&counter) = self.counter.get(&query) {
             (counter, false)
         } else {
@@ -81,26 +78,30 @@ impl DataSource for PdhDataSource {
             PdhGetFormattedCounterValue(
                 counter,
                 match preferred_format {
-                    PreferredDataFormat::Boolean => PDH_FMT_LONG,
-                    PreferredDataFormat::Int => PDH_FMT_LONG,
-                    PreferredDataFormat::Float => PDH_FMT_DOUBLE,
+                    PreferredDataType::Boolean => PDH_FMT_LONG,
+                    PreferredDataType::Int => PDH_FMT_LONG,
+                    PreferredDataType::Float => PDH_FMT_DOUBLE,
                 },
                 null_mut(),
                 &mut value,
             )
         };
-        if result == PDH_INVALID_DATA {
-            return Ok(Data::Unknown);
-        }
-        if result != 0 {
-            Err(::windows::core::Error::from_win32())?;
+        match result {
+            0 => {}
+            PDH_CALC_NEGATIVE_DENOMINATOR | PDH_INVALID_DATA => {
+                return Ok(Data::Unknown);
+            }
+            _ => {
+                println!("{:x}", result);
+                Err(::windows::core::Error::from_win32())?;
+            }
         }
 
         let data = unsafe {
             match preferred_format {
-                PreferredDataFormat::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
-                PreferredDataFormat::Int => Data::Int(value.Anonymous.largeValue),
-                PreferredDataFormat::Float => Data::Float(value.Anonymous.doubleValue),
+                PreferredDataType::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
+                PreferredDataType::Int => Data::Int(value.Anonymous.largeValue),
+                PreferredDataType::Float => Data::Float(value.Anonymous.doubleValue),
             }
         };
 
