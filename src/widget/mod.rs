@@ -1,6 +1,6 @@
 use resvg::render_node;
-use tiny_skia::{Pixmap, PixmapMut, Transform};
-use usvg::{Align, AspectRatio, FitTo, NodeExt, Rect, Size, Svg, Tree};
+use tiny_skia::{Pixmap, Transform};
+use usvg::{Align, AspectRatio, FitTo, NodeExt, Options, Rect, Size, Svg, Tree};
 
 use crate::{
     component::Component,
@@ -14,7 +14,7 @@ pub struct Widget {
 }
 
 impl Widget {
-    pub fn render(&mut self, target: &mut Pixmap) -> eyre::Result<()> {
+    pub fn render(&mut self, options: &Options, target: &mut Pixmap) -> eyre::Result<()> {
         let viewbox_width = target.width() as f64;
         let viewbox_height = target.height() as f64;
         let x = self.x.to_real_position(viewbox_width, viewbox_height);
@@ -36,7 +36,7 @@ impl Widget {
         let mut mosttop = 0.0;
         let mut mostbottom = 0.0;
         for component in self.components.iter_mut() {
-            let node = component.render();
+            let node = component.render(options)?;
             let bbox = node.calculate_bbox().unwrap();
             mostleft = f64::min(mostleft, bbox.left());
             mostright = f64::max(mostright, bbox.right());

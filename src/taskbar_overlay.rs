@@ -1,34 +1,29 @@
 use std::ptr::null_mut;
 
 use once_cell::sync::{Lazy, OnceCell};
-use tiny_skia::{Paint, Pixmap, PremultipliedColorU8, Rect, Transform};
+use tiny_skia::{Paint, Pixmap, Rect, Transform};
+use usvg::Options;
 use windows::Win32::{
     Foundation::{GetLastError, HWND, LPARAM, LRESULT, PWSTR, RECT, WPARAM},
     Graphics::Gdi::{
         BeginPaint, BitBlt, CreateBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC,
-        DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, SetTextColor,
-        TextOutW, HGDIOBJ, HRGN, MERGECOPY, MERGEPAINT, PAINTSTRUCT, RDW_INVALIDATE, RDW_UPDATENOW,
-        SRCPAINT, TRANSPARENT,
+        DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, HRGN, PAINTSTRUCT,
+        RDW_INVALIDATE, RDW_UPDATENOW, SRCPAINT, TRANSPARENT,
     },
     System::{
         LibraryLoader::GetModuleHandleW,
-        Performance::{
-            PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
-            PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE,
-        },
         SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX},
     },
     UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
         PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow, TranslateMessage,
-        CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_ERASEBKGND,
-        WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
+        CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_PAINT, WNDCLASSW,
+        WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
     },
 };
 
 use crate::{
     component::Component,
-    data_source::{Data, DataSource, PdhDataSource, PreferredDataType},
     system::{HorizontalPosition, Length, VerticalPosition},
     taskbar::Taskbar,
     widget::Widget,
@@ -174,7 +169,20 @@ unsafe extern "system" fn wndproc(
     static mut WIDGET: Lazy<Widget> = Lazy::new(|| Widget {
         x: HorizontalPosition::Left(Length::Pixel(8)),
         y: VerticalPosition::Center,
-        components: vec![Component::HBox()],
+        components: vec![
+            quick_xml::de::from_str::<Component>(
+                r#"
+                    <text color="red">Hello</text>
+                "#,
+            )
+            .unwrap(),
+            quick_xml::de::from_str::<Component>(
+                r#"
+                    <text color="green" font-size="24px">world</text>
+                "#,
+            )
+            .unwrap(),
+        ],
     });
 
     let overlay = match TASKBAR_OVERLAY.get() {
@@ -190,6 +198,14 @@ unsafe extern "system" fn wndproc(
     if GlobalMemoryStatusEx(&mut mem).0 == 0 {
         println!("wtf, {}", GetLastError());
     }
+
+    let mut options = Options::default();
+    options.fontdb.load_system_fonts();
+
+    let local_appdata = std::env::var("LocalAppdata").unwrap();
+    options
+        .fontdb
+        .load_fonts_dir(std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"));
 
     match message as u32 {
         WM_PAINT => {
@@ -210,7 +226,7 @@ unsafe extern "system" fn wndproc(
                 Transform::default(),
                 None,
             );
-            WIDGET.render(&mut pixmap).unwrap();
+            WIDGET.render(&options, &mut pixmap).unwrap();
             let data: Vec<u32> = pixmap
                 .pixels()
                 .iter()

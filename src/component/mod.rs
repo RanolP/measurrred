@@ -1,39 +1,27 @@
+use serde::Deserialize;
 use usvg::{Node, Options, Tree};
 
+pub use self::text::Text;
+
+mod data_text;
+mod hbox;
+mod text;
+mod vbox;
+
+#[derive(Deserialize)]
+#[serde(untagged)]
 pub enum Component {
-    HBox(),
-    VBox(),
-    DataText(),
+    Text(Text),
+}
+
+pub trait ComponentRender {
+    fn render(&mut self, parent: Option<&Component>, usvg_options: &Options) -> eyre::Result<Node>;
 }
 
 impl Component {
-    pub fn render(&mut self) -> Node {
-        static mut COUNTER: u32 = 0;
-
-        unsafe {
-            COUNTER += 1;
+    pub fn render(&mut self, options: &Options) -> eyre::Result<Node> {
+        match self {
+            Component::Text(plain_text) => return plain_text.render(options),
         }
-
-        let mut options = Options::default();
-        options.fontdb.load_system_fonts();
-
-        let local_appdata = std::env::var("LocalAppdata").unwrap();
-        options.fontdb.load_fonts_dir(
-            std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"),
-        );
-
-        let svg = format!(
-            r#"
-                <svg version="1.1" width="100" height="32" xmlns="http://www.w3.org/2000/svg">
-                    <text id="root" fill="red" font-size="24" font-family="Noto Sans CJK KR Bold">Hello {}</text>
-                </svg>
-            "#,
-            unsafe { COUNTER }
-        );
-
-        Tree::from_str(&svg, &options.to_ref())
-            .unwrap()
-            .node_by_id("root")
-            .unwrap()
     }
 }
