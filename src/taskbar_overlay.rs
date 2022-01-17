@@ -21,8 +21,8 @@ use windows::Win32::{
     UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
         PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow, TranslateMessage,
-        CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_PAINT, WNDCLASSW,
-        WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
+        CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_ERASEBKGND,
+        WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
     },
 };
 
@@ -171,8 +171,6 @@ unsafe extern "system" fn wndproc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    static mut PDH: Lazy<PdhDataSource> =
-        Lazy::new(|| PdhDataSource::try_initialize().expect("Can initialize pdh data source"));
     static mut WIDGET: Lazy<Widget> = Lazy::new(|| Widget {
         x: HorizontalPosition::Left(Length::Pixel(8)),
         y: VerticalPosition::Center,
@@ -185,12 +183,6 @@ unsafe extern "system" fn wndproc(
             return DefWindowProcW(window, message, wparam, lparam);
         }
     };
-
-    PDH.update().expect("Should update");
-
-    let cpu_usage_value = PDH
-        .query_float(r"\Processor(_Total)\% Processor Time".to_string(), false)
-        .expect("Should query");
 
     let mut mem = MEMORYSTATUSEX::default();
     mem.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
@@ -205,23 +197,7 @@ unsafe extern "system" fn wndproc(
             GetClientRect(window, &mut rect);
             let mut ps = PAINTSTRUCT::default();
             let hdc = BeginPaint(window, &mut ps);
-            FillRect(&hdc, &rect, CreateSolidBrush(overlay.background_color));
             SetBkMode(&hdc, TRANSPARENT);
-
-            SetTextColor(&hdc, rgb!(127, 255, 127));
-            let text = format!("CPU {:.1}%", cpu_usage_value);
-            let text: &str = &text;
-            TextOutW(hdc, 16, 8, text, text.len() as _);
-
-            SetTextColor(&hdc, rgb!(127, 127, 255));
-            let text = format!(
-                "RAM {:.1}% ({:.1} / {:.1} GB)",
-                (mem.ullTotalPhys - mem.ullAvailPhys) as f64 / mem.ullTotalPhys as f64 * 100.0,
-                (mem.ullTotalPhys - mem.ullAvailPhys) as f64 / 1024.0 / 1024.0 / 1024.0,
-                mem.ullTotalPhys as f64 / 1024.0 / 1024.0 / 1024.0
-            );
-            let text: &str = &text;
-            TextOutW(&hdc, 16, 24, text, text.len() as _);
 
             let taskbar_rect = Taskbar::get().unwrap().rect().unwrap();
             let width = taskbar_rect.right - taskbar_rect.left;
@@ -248,6 +224,7 @@ unsafe extern "system" fn wndproc(
             let dc = CreateCompatibleDC(hdc);
             let bitmap = CreateBitmap(width, height, 1, 32, data.as_ptr() as _);
             SelectObject(dc, bitmap);
+            FillRect(&hdc, &rect, CreateSolidBrush(overlay.background_color));
             BitBlt(hdc, 0, 0, width, height, dc, 0, 0, SRCPAINT);
             DeleteObject(bitmap);
             DeleteDC(dc);

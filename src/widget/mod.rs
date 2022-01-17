@@ -1,10 +1,10 @@
 use resvg::render_node;
 use tiny_skia::{Pixmap, PixmapMut, Transform};
-use usvg::{Align, AspectRatio, FitTo, Rect, Size, Svg, Tree};
+use usvg::{Align, AspectRatio, FitTo, NodeExt, Rect, Size, Svg, Tree};
 
 use crate::{
     component::Component,
-    system::{HorizontalPosition, VerticalPosition},
+    system::{HorizontalAlignment, HorizontalPosition, VerticalAlignment, VerticalPosition},
 };
 
 pub struct Widget {
@@ -15,10 +15,14 @@ pub struct Widget {
 
 impl Widget {
     pub fn render(&mut self, target: &mut Pixmap) -> eyre::Result<()> {
+        let viewbox_width = target.width() as f64;
+        let viewbox_height = target.height() as f64;
+        let x = self.x.to_real_position(viewbox_width, viewbox_height);
+        let y = self.y.to_real_position(viewbox_width, viewbox_height);
         let tree = Tree::create(Svg {
-            size: Size::new(target.width() as f64, target.height() as f64).unwrap(),
+            size: Size::new(viewbox_width, viewbox_height).unwrap(),
             view_box: usvg::ViewBox {
-                rect: Rect::new(0.0, 0.0, target.width() as f64, target.height() as f64).unwrap(),
+                rect: Rect::new(0.0, 0.0, viewbox_width, viewbox_height).unwrap(),
                 aspect: AspectRatio {
                     defer: false,
                     align: Align::None,
@@ -26,13 +30,44 @@ impl Widget {
                 },
             },
         });
+        let mut nodes = Vec::new();
+        let mut mostleft = 0.0;
+        let mut mostright = 0.0;
+        let mut mosttop = 0.0;
+        let mut mostbottom = 0.0;
         for component in self.components.iter_mut() {
             let node = component.render();
+            let bbox = node.calculate_bbox().unwrap();
+            mostleft = f64::min(mostleft, bbox.left());
+            mostright = f64::max(mostright, bbox.right());
+            mosttop = f64::min(mosttop, bbox.top());
+            mostbottom = f64::max(mostbottom, bbox.bottom());
+            nodes.push(node);
+        }
+        let total_width = mostright - mostleft;
+        let total_height = mostbottom - mosttop;
+        let transform = Transform::from_translate(
+            {
+                (x.1 + match x.0 {
+                    HorizontalAlignment::Left => 0.0,
+                    HorizontalAlignment::Center => viewbox_width / 2.0 - total_width / 2.0,
+                    HorizontalAlignment::Right => -total_width,
+                }) as f32
+            },
+            {
+                (y.1 + match y.0 {
+                    VerticalAlignment::Top => 0.0,
+                    VerticalAlignment::Center => viewbox_height / 2.0 - total_height / 2.0,
+                    VerticalAlignment::Bottom => -total_height,
+                }) as f32
+            },
+        );
+        for node in nodes {
             render_node(
                 &tree,
                 &node,
                 FitTo::Original,
-                Transform::default(),
+                transform.clone(),
                 target.as_mut(),
             )
             .unwrap();
