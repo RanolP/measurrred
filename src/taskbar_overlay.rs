@@ -1,4 +1,4 @@
-use std::ptr::null_mut;
+use std::{collections::HashMap, ptr::null_mut, sync::Arc};
 
 use once_cell::sync::{Lazy, OnceCell};
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
@@ -23,7 +23,8 @@ use windows::Win32::{
 };
 
 use crate::{
-    component::Component,
+    component::{Component, SetupContext},
+    data_source::{DataSource, GlobalMemoryStatusDataSource, PdhDataSource},
     system::{HorizontalPosition, Length, VerticalPosition},
     taskbar::Taskbar,
     widget::Widget,
@@ -36,6 +37,8 @@ pub struct TaskbarOverlay {
     window: HWND,
     background_color: u32,
     transparent_background: bool,
+    data_source: Vec<Box<dyn DataSource + Sync + Send>>,
+    widgets: Vec<Widget>,
 }
 
 impl TaskbarOverlay {
@@ -79,11 +82,67 @@ impl TaskbarOverlay {
             }
             .ok()?;
 
+            let data_source: Vec<Box<dyn DataSource + Sync + Send + 'static>> = vec![Box::new(PdhDataSource::try_initialize()?), Box::new(GlobalMemoryStatusDataSource)];
+
+            let mut context = SetupContext {
+                data_source: {
+                    let mut map = HashMap::new();
+                    for source in data_source {
+                        map.insert(source.name(), source);
+                    }
+                    map
+                },
+            };
+
+            let src = r#"
+                <vbox>
+                    <hbox y-align="center">
+                        <text color="yellow">CPU</text>
+                        <margin size="8" />
+                        <data-text source="pdh" query="\Processor(_Total)\% Processor Time" format="float" />
+                        <margin size="2" />
+                        <text>%</text>
+                    </hbox>
+                    <hbox y-align="center">
+                        <text color="yellow">RAM</text>
+                        <margin size="8" />
+                        <data-text source="global-memory-status" query="dwMemoryLoad" format="float" />
+                        <margin size="2" />
+                        <text>%</text>
+                        <margin size="6" />
+                        <text>(</text>
+                        <data-text source="global-memory-status" query="ullUsedPhys" format="float" divide-by="1073741824" />
+                        <margin size="4" />
+                        <text>/</text>
+                        <margin size="4" />
+                        <data-text source="global-memory-status" query="ullTotalPhys" format="float" divide-by="1073741824" />
+                        <margin size="4" />
+                        <text>GB</text>
+                        <text>)</text>
+                    </hbox>
+                </vbox>
+            "#;
+
+            let mut widgets = vec![Widget {
+                x: HorizontalPosition::Left(Length::Pixel(16)),
+                y: VerticalPosition::Center,
+                components: vec![quick_xml::de::from_str::<Component>(
+                    src,
+                )
+                .unwrap()],
+            }];
+
+            for widget in widgets.iter_mut() {
+                widget.setup(&mut context)?;
+            }
+
             let overlay = TaskbarOverlay {
                 target: taskbar,
                 window: window_handle,
                 background_color: 0x000000,
                 transparent_background: true,
+                data_source: context.data_source.into_values().collect(),
+                widgets,
             };
 
             overlay.update_background()?;
@@ -112,7 +171,15 @@ impl TaskbarOverlay {
         unsafe { ShowWindow(self.window, SW_SHOW).as_bool() }
     }
 
-    pub fn update(&self) -> eyre::Result<()> {
+    pub fn update_data(&self) -> eyre::Result<()> {
+        for source in &self.data_source {
+            source.update()?;
+        }
+
+        Ok(())
+    }
+
+    pub fn update_view(&self) -> eyre::Result<()> {
         let fail = unsafe {
             RedrawWindow(
                 self.window,
@@ -166,38 +233,12 @@ unsafe extern "system" fn wndproc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    static mut WIDGET: Lazy<Widget> = Lazy::new(|| Widget {
-        x: HorizontalPosition::Left(Length::Pixel(8)),
-        y: VerticalPosition::Center,
-        components: vec![
-            quick_xml::de::from_str::<Component>(
-                r#"
-                    <text color="red">Hello</text>
-                "#,
-            )
-            .unwrap(),
-            quick_xml::de::from_str::<Component>(
-                r#"
-                    <text color="green" font-size="24px">world</text>
-                "#,
-            )
-            .unwrap(),
-        ],
-    });
-
     let overlay = match TASKBAR_OVERLAY.get() {
         Some(overlay) => overlay,
         None => {
             return DefWindowProcW(window, message, wparam, lparam);
         }
     };
-
-    let mut mem = MEMORYSTATUSEX::default();
-    mem.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
-
-    if GlobalMemoryStatusEx(&mut mem).0 == 0 {
-        println!("wtf, {}", GetLastError());
-    }
 
     let mut options = Options::default();
     options.fontdb.load_system_fonts();
@@ -226,7 +267,9 @@ unsafe extern "system" fn wndproc(
                 Transform::default(),
                 None,
             );
-            WIDGET.render(&options, &mut pixmap).unwrap();
+            for widget in &overlay.widgets {
+                widget.render(&options, &mut pixmap).unwrap();
+            }
             let data: Vec<u32> = pixmap
                 .pixels()
                 .iter()

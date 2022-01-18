@@ -1,16 +1,31 @@
 pub use pdh::*;
+pub use global_memory_status::*;
+use serde::Deserialize;
 
 mod pdh;
+mod global_memory_status;
 
 pub trait DataSource {
     fn name(&self) -> String;
 
-    fn update(&mut self) -> eyre::Result<()>;
+    fn update(&self) -> eyre::Result<()>;
 
-    fn query(&mut self, query: String, preferred_format: PreferredDataType) -> eyre::Result<Data>;
+    fn query(
+        &mut self,
+        query: String,
+        preferred_format: PreferredDataFormat,
+    ) -> eyre::Result<DataHandle>;
+}
 
-    fn query_int(&mut self, query: String, strict: bool) -> eyre::Result<i64> {
-        Ok(match self.query(query, PreferredDataType::Int)? {
+pub struct DataHandle(Box<dyn (Fn() -> eyre::Result<Data>) + Sync + Send>);
+
+impl DataHandle {
+    pub fn read(&self) -> eyre::Result<Data> {
+        (self.0)()
+    }
+
+    pub fn read_int(&self, strict: bool) -> eyre::Result<i64> {
+        Ok(match self.read()? {
             Data::Int(v) => v,
             Data::Float(v) => {
                 if strict {
@@ -36,8 +51,8 @@ pub trait DataSource {
         })
     }
 
-    fn query_float(&mut self, query: String, strict: bool) -> eyre::Result<f64> {
-        Ok(match self.query(query, PreferredDataType::Float)? {
+    pub fn read_float(&self, strict: bool) -> eyre::Result<f64> {
+        Ok(match self.read()? {
             Data::Int(v) => {
                 if strict {
                     eyre::bail!("Expected Float but Int received")
@@ -63,8 +78,8 @@ pub trait DataSource {
         })
     }
 
-    fn query_bool(&mut self, query: String, strict: bool) -> eyre::Result<bool> {
-        Ok(match self.query(query, PreferredDataType::Boolean)? {
+    pub fn read_bool(&self, strict: bool) -> eyre::Result<bool> {
+        Ok(match self.read()? {
             Data::Int(v) => {
                 if strict {
                     eyre::bail!("Expected Bool but Int received")
@@ -91,7 +106,9 @@ pub trait DataSource {
     }
 }
 
-pub enum PreferredDataType {
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PreferredDataFormat {
     Int,
     Float,
     Boolean,

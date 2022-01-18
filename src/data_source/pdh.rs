@@ -9,7 +9,7 @@ use windows::Win32::{
     },
 };
 
-use super::{Data, DataSource, PreferredDataType};
+use super::{Data, DataHandle, DataSource, PreferredDataFormat};
 
 pub struct PdhDataSource {
     query: isize,
@@ -39,7 +39,7 @@ impl DataSource for PdhDataSource {
         "pdh".to_string()
     }
 
-    fn update(&mut self) -> eyre::Result<()> {
+    fn update(&self) -> eyre::Result<()> {
         if self.counter.len() == 0 {
             return Ok(());
         }
@@ -53,9 +53,13 @@ impl DataSource for PdhDataSource {
         Ok(())
     }
 
-    fn query(&mut self, query: String, preferred_format: PreferredDataType) -> eyre::Result<Data> {
-        let (counter, is_new) = if let Some(&counter) = self.counter.get(&query) {
-            (counter, false)
+    fn query(
+        &mut self,
+        query: String,
+        preferred_format: PreferredDataFormat,
+    ) -> eyre::Result<DataHandle> {
+        let counter = if let Some(&counter) = self.counter.get(&query) {
+            counter
         } else {
             let mut counter = 0;
             let result =
@@ -66,45 +70,43 @@ impl DataSource for PdhDataSource {
             }
 
             self.counter.insert(query, counter);
-            (counter, true)
+            counter
         };
 
-        if is_new {
-            return Ok(Data::Unknown);
-        }
+        Ok(DataHandle(Box::new(move || {
+            let mut value = PDH_FMT_COUNTERVALUE::default();
+            let result = unsafe {
+                PdhGetFormattedCounterValue(
+                    counter,
+                    match preferred_format {
+                        PreferredDataFormat::Boolean => PDH_FMT_LONG,
+                        PreferredDataFormat::Int => PDH_FMT_LONG,
+                        PreferredDataFormat::Float => PDH_FMT_DOUBLE,
+                    },
+                    null_mut(),
+                    &mut value,
+                )
+            };
+            match result {
+                0 => {}
+                PDH_CALC_NEGATIVE_DENOMINATOR | PDH_INVALID_DATA => {
+                    return Ok(Data::Unknown);
+                }
+                _ => {
+                    println!("{:x}", result);
+                    Err(::windows::core::Error::from_win32())?;
+                }
+            }
 
-        let mut value = PDH_FMT_COUNTERVALUE::default();
-        let result = unsafe {
-            PdhGetFormattedCounterValue(
-                counter,
+            let data = unsafe {
                 match preferred_format {
-                    PreferredDataType::Boolean => PDH_FMT_LONG,
-                    PreferredDataType::Int => PDH_FMT_LONG,
-                    PreferredDataType::Float => PDH_FMT_DOUBLE,
-                },
-                null_mut(),
-                &mut value,
-            )
-        };
-        match result {
-            0 => {}
-            PDH_CALC_NEGATIVE_DENOMINATOR | PDH_INVALID_DATA => {
-                return Ok(Data::Unknown);
-            }
-            _ => {
-                println!("{:x}", result);
-                Err(::windows::core::Error::from_win32())?;
-            }
-        }
+                    PreferredDataFormat::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
+                    PreferredDataFormat::Int => Data::Int(value.Anonymous.largeValue),
+                    PreferredDataFormat::Float => Data::Float(value.Anonymous.doubleValue),
+                }
+            };
 
-        let data = unsafe {
-            match preferred_format {
-                PreferredDataType::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
-                PreferredDataType::Int => Data::Int(value.Anonymous.largeValue),
-                PreferredDataType::Float => Data::Float(value.Anonymous.doubleValue),
-            }
-        };
-
-        Ok(data)
+            Ok(data)
+        })))
     }
 }

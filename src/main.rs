@@ -26,7 +26,8 @@ fn main() -> eyre::Result<()> {
 
     let handle = thread::spawn(move || loop {
         thread::sleep(Duration::from_millis(2000));
-        overlay.update().expect("Should update successfully");
+        overlay.update_view().expect("Should update successfully");
+        overlay.update_data().expect("Should update successfully");
     });
 
     overlay.begin_event_loop()?;

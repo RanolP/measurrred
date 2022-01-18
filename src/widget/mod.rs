@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
 use resvg::render_node;
 use tiny_skia::{Pixmap, Transform};
 use usvg::{Align, AspectRatio, FitTo, NodeExt, Options, Rect, Size, Svg, Tree};
 
 use crate::{
-    component::Component,
-    system::{HorizontalAlignment, HorizontalPosition, VerticalAlignment, VerticalPosition},
+    component::{Component, ComponentRender, ComponentSetup, RenderContext, SetupContext},
+    config::MeasurrredConfig,
+    data_source::{DataSource, PdhDataSource},
+    system::{HorizontalPosition, VerticalPosition},
 };
 
 pub struct Widget {
@@ -14,9 +18,32 @@ pub struct Widget {
 }
 
 impl Widget {
-    pub fn render(&mut self, options: &Options, target: &mut Pixmap) -> eyre::Result<()> {
+    pub fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
+        for component in self.components.iter_mut() {
+            component.setup(context)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn render(&self, options: &Options, target: &mut Pixmap) -> eyre::Result<()> {
         let viewbox_width = target.width() as f64;
         let viewbox_height = target.height() as f64;
+
+        let config = MeasurrredConfig {
+            foreground_color: "white".to_string(),
+            background_color: "black".to_string(),
+            font_family: "Noto Sans CJK KR Bold".to_string(),
+        };
+        let config = &config;
+
+        let context = RenderContext {
+            viewbox_width,
+            viewbox_height,
+            usvg_options: options,
+            config,
+        };
+
         let x = self.x.to_real_position(viewbox_width, viewbox_height);
         let y = self.y.to_real_position(viewbox_width, viewbox_height);
         let tree = Tree::create(Svg {
@@ -35,8 +62,8 @@ impl Widget {
         let mut mostright = 0.0;
         let mut mosttop = 0.0;
         let mut mostbottom = 0.0;
-        for component in self.components.iter_mut() {
-            let node = component.render(options)?;
+        for component in &self.components {
+            let node = component.render(context.clone())?;
             let bbox = node.calculate_bbox().unwrap();
             mostleft = f64::min(mostleft, bbox.left());
             mostright = f64::max(mostright, bbox.right());
@@ -47,20 +74,8 @@ impl Widget {
         let total_width = mostright - mostleft;
         let total_height = mostbottom - mosttop;
         let transform = Transform::from_translate(
-            {
-                (x.1 + match x.0 {
-                    HorizontalAlignment::Left => 0.0,
-                    HorizontalAlignment::Center => viewbox_width / 2.0 - total_width / 2.0,
-                    HorizontalAlignment::Right => -total_width,
-                }) as f32
-            },
-            {
-                (y.1 + match y.0 {
-                    VerticalAlignment::Top => 0.0,
-                    VerticalAlignment::Center => viewbox_height / 2.0 - total_height / 2.0,
-                    VerticalAlignment::Bottom => -total_height,
-                }) as f32
-            },
+            (x.0.align(viewbox_width, total_width) + x.1) as f32,
+            (y.0.align(viewbox_height, total_height) + y.1) as f32,
         );
         for node in nodes {
             render_node(
