@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use resvg::render_node;
 use tiny_skia::{Pixmap, Transform};
 use usvg::{Align, AspectRatio, FitTo, NodeExt, Options, Rect, Size, Svg, Tree};
@@ -7,7 +5,6 @@ use usvg::{Align, AspectRatio, FitTo, NodeExt, Options, Rect, Size, Svg, Tree};
 use crate::{
     component::{Component, ComponentRender, ComponentSetup, RenderContext, SetupContext},
     config::MeasurrredConfig,
-    data_source::{DataSource, PdhDataSource},
     system::{HorizontalPosition, VerticalPosition},
 };
 
@@ -44,8 +41,6 @@ impl Widget {
             config,
         };
 
-        let x = self.x.to_real_position(viewbox_width, viewbox_height);
-        let y = self.y.to_real_position(viewbox_width, viewbox_height);
         let tree = Tree::create(Svg {
             size: Size::new(viewbox_width, viewbox_height).unwrap(),
             view_box: usvg::ViewBox {
@@ -73,9 +68,14 @@ impl Widget {
         }
         let total_width = mostright - mostleft;
         let total_height = mostbottom - mosttop;
+
         let transform = Transform::from_translate(
-            (x.0.align(viewbox_width, total_width) + x.1) as f32,
-            (y.0.align(viewbox_height, total_height) + y.1) as f32,
+            self.x
+                .to_real_position(viewbox_width, viewbox_height, total_width, total_height)
+                as f32,
+            self.y
+                .to_real_position(viewbox_width, viewbox_height, total_width, total_height)
+                as f32,
         );
         for node in nodes {
             render_node(

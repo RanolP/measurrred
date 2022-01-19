@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use once_cell::sync::OnceCell;
 use serde::Deserialize;
 use usvg::{
     fontdb::{Family, Query},

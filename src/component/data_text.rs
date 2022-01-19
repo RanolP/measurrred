@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::{
     component::Text,
-    data_source::{DataHandle, PreferredDataFormat},
+    data_source::{DataFormat, DataHandle},
 };
 
 use super::{ComponentRender, ComponentSetup, RenderContext, SetupContext};
@@ -18,7 +18,7 @@ pub struct DataText {
 
     source: String,
     query: String,
-    format: PreferredDataFormat,
+    format: DataFormat,
 
     #[serde(skip)]
     handle: Option<DataHandle>,
@@ -28,9 +28,8 @@ impl ComponentSetup for DataText {
     fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
         self.handle = Some(
             context
-                .data_source
-                .get_mut(&self.source)
-                .unwrap()
+                .find_data_source(&self.source)
+                .ok_or(eyre::eyre!("Unknown data source: {}", &self.source))?
                 .query(self.query.clone(), self.format.clone())?,
         );
         Ok(())
@@ -42,13 +41,13 @@ impl ComponentRender for DataText {
         let divide_by = self.divide_by.unwrap_or(1.0);
         let handle = self.handle.as_ref().unwrap();
         let content = match self.format {
-            PreferredDataFormat::Int => format!("{}", handle.read_int(false)? / (divide_by as i64)),
-            PreferredDataFormat::Float => format!(
+            DataFormat::Int => format!("{}", handle.read_int(false)? / (divide_by as i64)),
+            DataFormat::Float => format!(
                 "{:.precision$}",
                 handle.read_float(false)? / divide_by,
                 precision = self.precision.unwrap_or(2)
             ),
-            PreferredDataFormat::Boolean => format!("{}", handle.read_bool(false)?),
+            DataFormat::Boolean => format!("{}", handle.read_bool(false)?),
         };
         let text = Text {
             color: self.color.clone(),

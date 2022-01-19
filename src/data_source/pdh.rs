@@ -9,7 +9,7 @@ use windows::Win32::{
     },
 };
 
-use super::{Data, DataHandle, DataSource, PreferredDataFormat};
+use super::{Data, DataFormat, DataHandle, DataSource};
 
 pub struct PdhDataSource {
     query: isize,
@@ -17,7 +17,7 @@ pub struct PdhDataSource {
 }
 
 impl PdhDataSource {
-    pub fn try_initialize<'a>() -> eyre::Result<PdhDataSource> {
+    pub fn new<'a>() -> eyre::Result<PdhDataSource> {
         let mut query = 0;
 
         let result = unsafe { PdhOpenQueryW(PWSTR(null_mut()), 0, &mut query) };
@@ -35,8 +35,8 @@ impl PdhDataSource {
 }
 
 impl DataSource for PdhDataSource {
-    fn name(&self) -> String {
-        "pdh".to_string()
+    fn name(&self) -> &'static str {
+        "pdh"
     }
 
     fn update(&self) -> eyre::Result<()> {
@@ -53,11 +53,7 @@ impl DataSource for PdhDataSource {
         Ok(())
     }
 
-    fn query(
-        &mut self,
-        query: String,
-        preferred_format: PreferredDataFormat,
-    ) -> eyre::Result<DataHandle> {
+    fn query(&mut self, query: String, preferred_format: DataFormat) -> eyre::Result<DataHandle> {
         let counter = if let Some(&counter) = self.counter.get(&query) {
             counter
         } else {
@@ -79,9 +75,9 @@ impl DataSource for PdhDataSource {
                 PdhGetFormattedCounterValue(
                     counter,
                     match preferred_format {
-                        PreferredDataFormat::Boolean => PDH_FMT_LONG,
-                        PreferredDataFormat::Int => PDH_FMT_LONG,
-                        PreferredDataFormat::Float => PDH_FMT_DOUBLE,
+                        DataFormat::Boolean => PDH_FMT_LONG,
+                        DataFormat::Int => PDH_FMT_LONG,
+                        DataFormat::Float => PDH_FMT_DOUBLE,
                     },
                     null_mut(),
                     &mut value,
@@ -100,9 +96,9 @@ impl DataSource for PdhDataSource {
 
             let data = unsafe {
                 match preferred_format {
-                    PreferredDataFormat::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
-                    PreferredDataFormat::Int => Data::Int(value.Anonymous.largeValue),
-                    PreferredDataFormat::Float => Data::Float(value.Anonymous.doubleValue),
+                    DataFormat::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
+                    DataFormat::Int => Data::Int(value.Anonymous.largeValue),
+                    DataFormat::Float => Data::Float(value.Anonymous.doubleValue),
                 }
             };
 

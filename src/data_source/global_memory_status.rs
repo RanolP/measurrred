@@ -1,35 +1,19 @@
-use std::{collections::HashMap, ptr::null_mut};
+use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
 
-use windows::Win32::{
-    Foundation::{GetLastError, PWSTR},
-    System::{
-        Performance::{
-            PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
-            PDH_CALC_NEGATIVE_DENOMINATOR, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_FMT_LONG,
-            PDH_INVALID_DATA,
-        },
-        SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX},
-    },
-};
-
-use super::{Data, DataHandle, DataSource, PreferredDataFormat};
+use super::{Data, DataFormat, DataHandle, DataSource};
 
 pub struct GlobalMemoryStatusDataSource;
 
 impl DataSource for GlobalMemoryStatusDataSource {
-    fn name(&self) -> String {
-        "global-memory-status".to_string()
+    fn name(&self) -> &'static str {
+        "global-memory-status"
     }
 
     fn update(&self) -> eyre::Result<()> {
         Ok(())
     }
 
-    fn query(
-        &mut self,
-        query: String,
-        preferred_format: PreferredDataFormat,
-    ) -> eyre::Result<DataHandle> {
+    fn query(&mut self, query: String, preferred_format: DataFormat) -> eyre::Result<DataHandle> {
         Ok(DataHandle(Box::new(move || {
             let query: &str = &query;
 
@@ -43,22 +27,26 @@ impl DataSource for GlobalMemoryStatusDataSource {
             }
 
             let result = match query {
-                "dwMemoryLoad" => mem.dwMemoryLoad as u64,
-                "ullTotalPhys" => mem.ullTotalPhys,
-                "ullAvailPhys" => mem.ullAvailPhys,
-                "ullUsedPhys" => mem.ullTotalPhys - mem.ullAvailPhys,
-                "ullTotalPageFile" => mem.ullTotalPageFile,
-                "ullAvailPageFile" => mem.ullAvailPageFile,
-                "ullTotalVirtual" => mem.ullTotalVirtual,
-                "ullAvailVirtual" => mem.ullAvailVirtual,
-                "ullAvailExtendedVirtual" => mem.ullAvailExtendedVirtual,
+                "dwMemoryLoad" => mem.dwMemoryLoad as f64,
+                "ullTotalPhys" => mem.ullTotalPhys as f64,
+                "ullAvailPhys" => mem.ullAvailPhys as f64,
+                "ullUsedPhys" => mem.ullTotalPhys as f64 - mem.ullAvailPhys as f64,
+                "ullTotalPageFile" => mem.ullTotalPageFile as f64,
+                "ullAvailPageFile" => mem.ullAvailPageFile as f64,
+                "ullTotalVirtual" => mem.ullTotalVirtual as f64,
+                "ullAvailVirtual" => mem.ullAvailVirtual as f64,
+                "ullAvailExtendedVirtual" => mem.ullAvailExtendedVirtual as f64,
+                "dMemoryLoad" => {
+                    (mem.ullTotalPhys as f64 - mem.ullAvailPhys as f64) / mem.ullTotalPhys as f64
+                        * 100.0
+                }
                 _ => eyre::bail!("Unknown query: {}", query),
             };
 
             let data = match preferred_format {
-                PreferredDataFormat::Int => Data::Int(result as i64),
-                PreferredDataFormat::Float => Data::Float(result as f64),
-                PreferredDataFormat::Boolean => Data::Int(result as i64),
+                DataFormat::Int => Data::Int(result as i64),
+                DataFormat::Float => Data::Float(result),
+                DataFormat::Boolean => Data::Int(result as i64),
             };
 
             Ok(data)

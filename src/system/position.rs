@@ -27,17 +27,21 @@ impl HorizontalPosition {
         &self,
         viewbox_width: f64,
         viewbox_height: f64,
-    ) -> (HorizontalAlignment, f64) {
+        component_width: f64,
+        _component_height: f64,
+    ) -> f64 {
         match self {
-            HorizontalPosition::Left(length) => (
-                HorizontalAlignment::Left,
-                length.translate_to_px(viewbox_width, viewbox_height),
-            ),
-            HorizontalPosition::Center => (HorizontalAlignment::Center, 0.0),
-            HorizontalPosition::Right(length) => (
-                HorizontalAlignment::Right,
-                length.translate_to_px(viewbox_width, viewbox_height),
-            ),
+            HorizontalPosition::Left(length) => {
+                HorizontalAlignment::Left.align(viewbox_width, component_width)
+                    + length.translate_to_px(viewbox_width, viewbox_height)
+            }
+            HorizontalPosition::Center => {
+                HorizontalAlignment::Center.align(viewbox_width, component_width) + 0.0
+            }
+            HorizontalPosition::Right(length) => {
+                HorizontalAlignment::Right.align(viewbox_width, component_width)
+                    + length.translate_to_px(viewbox_width, viewbox_height)
+            }
         }
     }
 }
@@ -53,17 +57,21 @@ impl VerticalPosition {
         &self,
         viewbox_width: f64,
         viewbox_height: f64,
-    ) -> (VerticalAlignment, f64) {
+        _component_width: f64,
+        component_height: f64,
+    ) -> f64 {
         match self {
-            VerticalPosition::Top(length) => (
-                VerticalAlignment::Top,
-                length.translate_to_px(viewbox_width, viewbox_height),
-            ),
-            VerticalPosition::Center => (VerticalAlignment::Center, 0.0),
-            VerticalPosition::Bottom(length) => (
-                VerticalAlignment::Bottom,
-                length.translate_to_px(viewbox_width, viewbox_height),
-            ),
+            VerticalPosition::Top(length) => {
+                VerticalAlignment::Top.align(viewbox_height, component_height)
+                    + length.translate_to_px(viewbox_width, viewbox_height)
+            }
+            VerticalPosition::Center => {
+                VerticalAlignment::Center.align(viewbox_height, component_height) + 0.0
+            }
+            VerticalPosition::Bottom(length) => {
+                VerticalAlignment::Bottom.align(viewbox_height, component_height)
+                    + length.translate_to_px(viewbox_width, viewbox_height)
+            }
         }
     }
 }

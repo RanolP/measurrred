@@ -1,8 +1,8 @@
-use std::{collections::HashMap, ptr::null_mut, sync::Arc};
+use std::ptr::null_mut;
 
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::OnceCell;
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
-use usvg::Options;
+use usvg::{Color, Options};
 use windows::Win32::{
     Foundation::{GetLastError, HWND, LPARAM, LRESULT, PWSTR, RECT, WPARAM},
     Graphics::Gdi::{
@@ -10,10 +10,7 @@ use windows::Win32::{
         DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, HRGN, PAINTSTRUCT,
         RDW_INVALIDATE, RDW_UPDATENOW, SRCPAINT, TRANSPARENT,
     },
-    System::{
-        LibraryLoader::GetModuleHandleW,
-        SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX},
-    },
+    System::LibraryLoader::GetModuleHandleW,
     UI::WindowsAndMessaging::{
         CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
         PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow, TranslateMessage,
@@ -22,13 +19,7 @@ use windows::Win32::{
     },
 };
 
-use crate::{
-    component::{Component, SetupContext},
-    data_source::{DataSource, GlobalMemoryStatusDataSource, PdhDataSource},
-    system::{HorizontalPosition, Length, VerticalPosition},
-    taskbar::Taskbar,
-    widget::Widget,
-};
+use crate::{system::ToWindowsColor, taskbar::Taskbar, widget::Widget};
 
 static TASKBAR_OVERLAY: OnceCell<TaskbarOverlay> = OnceCell::new();
 
@@ -37,14 +28,13 @@ pub struct TaskbarOverlay {
     window: HWND,
     background_color: u32,
     transparent_background: bool,
-    data_source: Vec<Box<dyn DataSource + Sync + Send>>,
     widgets: Vec<Widget>,
 }
 
 impl TaskbarOverlay {
-    pub fn try_initialize() -> eyre::Result<&'static TaskbarOverlay> {
+    pub fn try_initialize(widgets: Vec<Widget>) -> eyre::Result<&'static TaskbarOverlay> {
         TASKBAR_OVERLAY.get_or_try_init(|| {
-            let taskbar = Taskbar::try_initialize()?;
+            let taskbar = Taskbar::new()?;
             let taskbar_rect = taskbar.rect()?;
 
             let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;
@@ -82,66 +72,11 @@ impl TaskbarOverlay {
             }
             .ok()?;
 
-            let data_source: Vec<Box<dyn DataSource + Sync + Send + 'static>> = vec![Box::new(PdhDataSource::try_initialize()?), Box::new(GlobalMemoryStatusDataSource)];
-
-            let mut context = SetupContext {
-                data_source: {
-                    let mut map = HashMap::new();
-                    for source in data_source {
-                        map.insert(source.name(), source);
-                    }
-                    map
-                },
-            };
-
-            let src = r#"
-                <vbox>
-                    <hbox y-align="center">
-                        <text color="yellow">CPU</text>
-                        <margin size="8" />
-                        <data-text source="pdh" query="\Processor(_Total)\% Processor Time" format="float" />
-                        <margin size="2" />
-                        <text>%</text>
-                    </hbox>
-                    <hbox y-align="center">
-                        <text color="yellow">RAM</text>
-                        <margin size="8" />
-                        <data-text source="global-memory-status" query="dwMemoryLoad" format="float" />
-                        <margin size="2" />
-                        <text>%</text>
-                        <margin size="6" />
-                        <text>(</text>
-                        <data-text source="global-memory-status" query="ullUsedPhys" format="float" divide-by="1073741824" />
-                        <margin size="4" />
-                        <text>/</text>
-                        <margin size="4" />
-                        <data-text source="global-memory-status" query="ullTotalPhys" format="float" divide-by="1073741824" />
-                        <margin size="4" />
-                        <text>GB</text>
-                        <text>)</text>
-                    </hbox>
-                </vbox>
-            "#;
-
-            let mut widgets = vec![Widget {
-                x: HorizontalPosition::Left(Length::Pixel(16)),
-                y: VerticalPosition::Center,
-                components: vec![quick_xml::de::from_str::<Component>(
-                    src,
-                )
-                .unwrap()],
-            }];
-
-            for widget in widgets.iter_mut() {
-                widget.setup(&mut context)?;
-            }
-
             let overlay = TaskbarOverlay {
                 target: taskbar,
                 window: window_handle,
                 background_color: 0x000000,
                 transparent_background: true,
-                data_source: context.data_source.into_values().collect(),
                 widgets,
             };
 
@@ -151,9 +86,8 @@ impl TaskbarOverlay {
         })
     }
 
-    pub fn set_background_color(&mut self, red: u32, green: u32, blue: u32) -> eyre::Result<()> {
-        let color = red | (green << 8) | (blue << 16);
-        self.background_color = color;
+    pub fn set_background_color(&mut self, color: Color) -> eyre::Result<()> {
+        self.background_color = color.to_windows_color();
         self.update_background()
     }
 
@@ -171,15 +105,7 @@ impl TaskbarOverlay {
         unsafe { ShowWindow(self.window, SW_SHOW).as_bool() }
     }
 
-    pub fn update_data(&self) -> eyre::Result<()> {
-        for source in &self.data_source {
-            source.update()?;
-        }
-
-        Ok(())
-    }
-
-    pub fn update_view(&self) -> eyre::Result<()> {
+    pub fn update(&self) -> eyre::Result<()> {
         let fail = unsafe {
             RedrawWindow(
                 self.window,
@@ -221,12 +147,6 @@ impl TaskbarOverlay {
     }
 }
 
-macro_rules! rgb {
-    ($r:expr, $g:expr, $b:expr) => {
-        ((($r) | (($g) << 8)) | (($b) << 16))
-    };
-}
-
 unsafe extern "system" fn wndproc(
     window: HWND,
     message: u32,
@@ -256,7 +176,7 @@ unsafe extern "system" fn wndproc(
             let hdc = BeginPaint(window, &mut ps);
             SetBkMode(&hdc, TRANSPARENT);
 
-            let taskbar_rect = Taskbar::get().unwrap().rect().unwrap();
+            let taskbar_rect = overlay.target.rect().unwrap();
             let width = taskbar_rect.right - taskbar_rect.left;
             let height = taskbar_rect.bottom - taskbar_rect.top;
             let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
