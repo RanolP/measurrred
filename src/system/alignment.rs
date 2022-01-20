@@ -13,7 +13,7 @@ impl HorizontalAlignment {
         match self {
             HorizontalAlignment::Left => 0.0,
             HorizontalAlignment::Center => viewbox_width / 2.0 - component_width / 2.0,
-            HorizontalAlignment::Right => -component_width,
+            HorizontalAlignment::Right => viewbox_width - component_width,
         }
     }
 }
@@ -31,7 +31,7 @@ impl VerticalAlignment {
         match self {
             VerticalAlignment::Top => 0.0,
             VerticalAlignment::Center => viewbox_height / 2.0 - component_height / 2.0,
-            VerticalAlignment::Bottom => -component_height,
+            VerticalAlignment::Bottom => viewbox_height - component_height,
         }
     }
 }

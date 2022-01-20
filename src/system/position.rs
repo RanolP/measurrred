@@ -93,7 +93,7 @@ impl HorizontalPosition {
             }
             HorizontalPosition::Right(length) => {
                 HorizontalAlignment::Right.align(viewbox_width, component_width)
-                    + length.translate_to_px(viewbox_width, viewbox_height)
+                    - length.translate_to_px(viewbox_width, viewbox_height)
             }
         }
     }
@@ -188,7 +188,7 @@ impl VerticalPosition {
             }
             VerticalPosition::Bottom(length) => {
                 VerticalAlignment::Bottom.align(viewbox_height, component_height)
-                    + length.translate_to_px(viewbox_width, viewbox_height)
+                    - length.translate_to_px(viewbox_width, viewbox_height)
             }
         }
     }
