@@ -1,21 +1,16 @@
-# measurrred
-
-A taskbar integrated tiny system monitor.
-
-## Caveats
-
-- Only aims to support Windows 11.
-  - Especially target my local environment. Other environment wouldn't be tested.
+![banner](docs/images/banner.png)
 
 ## Features
 
+- Monitor the System
+  - [x] CPU Usage
+  - [x] Network Up/Down
+  - [x] RAM Usage
+
 - Monitor these stuffs:
-  - CPU usage
-  - RAM usage
   - GPU usage
   - Power usage trend
   - Batteries remaining
-  - Network usage
   - Core temperature
   - Weather
   - Disk usage
@@ -26,7 +21,12 @@ A taskbar integrated tiny system monitor.
 ### Features I Want to Implement
 
 - Move center of taskbar a little
-- Remove clock
+- Alter clock
 - Remove network integrated sound icon or replace that with EarTrumpet's one
 - Applying WinUI?
   - Especially Windows 11 Mica material
+
+## Caveats
+
+- Only aims to support Windows 11.
+  - Especially target my local environment. Other environment wouldn't be tested.

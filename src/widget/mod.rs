@@ -8,6 +8,10 @@ use crate::{
     system::{HorizontalPosition, VerticalPosition},
 };
 
+pub use self::config::WidgetConfig;
+
+mod config;
+
 pub struct Widget {
     pub x: HorizontalPosition,
     pub y: VerticalPosition,
@@ -15,6 +19,14 @@ pub struct Widget {
 }
 
 impl Widget {
+    pub fn new(config: WidgetConfig, components: Vec<Component>) -> Widget {
+        Widget {
+            x: config.position.x,
+            y: config.position.y,
+            components,
+        }
+    }
+
     pub fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
         for component in self.components.iter_mut() {
             component.setup(context)?;

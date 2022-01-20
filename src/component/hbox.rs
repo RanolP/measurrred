@@ -38,7 +38,7 @@ impl ComponentRender for HBox {
                     continue;
                 }
                 &Component::SetPosition { to } => {
-                    x -= to;
+                    x = to;
                     continue;
                 }
                 _ => {}

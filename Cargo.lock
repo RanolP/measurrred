@@ -263,6 +263,7 @@ dependencies = [
  "serde",
  "thiserror",
  "tiny-skia",
+ "toml",
  "ttf-parser 0.14.0",
  "usvg",
  "windows",
@@ -515,6 +516,15 @@ dependencies = [
  "cfg-if",
  "png",
  "safe_arch",
+]
+
+[[package]]
+name = "toml"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a31142970826733df8241ef35dc040ef98c679ab14d7c3e54d827099b3acecaa"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

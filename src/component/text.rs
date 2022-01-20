@@ -13,6 +13,8 @@ use super::{ComponentRender, RenderContext};
 pub struct Text {
     pub color: Option<String>,
     pub font_size: Option<f64>,
+    pub font_family: Option<String>,
+    pub font_weight: Option<String>,
     #[serde(rename = "$value")]
     pub content: String,
 }
@@ -47,6 +49,7 @@ impl ComponentRender for Text {
                         fill="{color}"
                         font-size="{font_size}"
                         font-family="{font_family}"
+                        {font_weight}
                     >
                         {content}
                     </text>
@@ -59,15 +62,28 @@ impl ComponentRender for Text {
                 .as_ref()
                 .unwrap_or(&context.config.foreground_color),
             font_size = self.font_size.as_ref().unwrap_or(&16.0),
-            font_family = context.config.font_family,
+            font_family = self
+                .font_family
+                .as_ref()
+                .unwrap_or(&context.config.font_family),
+            font_weight = self
+                .font_weight
+                .as_ref()
+                .map(|weight| format!(r#"font-weight="{}""#, weight))
+                .unwrap_or_default()
         );
         let tree = Tree::from_str(&svg, &context.usvg_options.to_ref())?;
         let node = tree.node_by_id("root").unwrap();
 
+        let width = match &*node.borrow() {
+            NodeKind::Path(path) => path.text_bbox.unwrap().width(),
+            _ => node.calculate_bbox().unwrap().width(),
+        };
+
         let rect = Node::new(NodeKind::Path({
             let mut path = Path::default();
             path.data = Rc::new(PathData::from_rect(
-                Rect::new(0.0, 0.0, node.calculate_bbox().unwrap().width(), height).unwrap(),
+                Rect::new(0.0, 0.0, width, height).unwrap(),
             ));
             path
         }));

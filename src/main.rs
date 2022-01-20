@@ -1,16 +1,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::thread;
+use std::io::Read;
 use std::time::Duration;
 use std::{collections::HashMap, ptr::null_mut};
+use std::{fs, thread};
 
 use component::Component;
 use data_source::{BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource};
-use system::{HorizontalPosition, Length, VerticalPosition};
+
 use taskbar_overlay::TaskbarOverlay;
 
-use widget::Widget;
+use widget::{Widget, WidgetConfig};
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
+use windows::Win32::System::Performance::PdhEnumObjectItemsW;
 
 mod component;
 mod config;
@@ -25,6 +27,79 @@ fn main() -> eyre::Result<()> {
         CoInitializeEx(null_mut(), COINIT_APARTMENTTHREADED)?;
     }
 
+    let mut widgets = Vec::new();
+
+    for directory in fs::read_dir("widgets")
+        .and_then(|it| it.collect::<Result<Vec<_>, _>>())
+        .map(|it| {
+            it.iter()
+                .flat_map(|dir| {
+                    fs::read_dir(dir.path())
+                        .and_then(|it| it.collect::<Result<Vec<_>, _>>())
+                        .unwrap_or(Vec::new())
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or(Vec::new())
+    {
+        let directory = directory.path();
+        let mut taskbar_config = match fs::File::open(directory.join("taskbar.config.toml")) {
+            Ok(file) => file,
+            Err(_) => {
+                eprintln!("Skipping directory {}", directory.to_string_lossy());
+                continue;
+            }
+        };
+        let mut taskbar_component = match fs::File::open(directory.join("taskbar.component.xml")) {
+            Ok(file) => file,
+            Err(_) => {
+                eprintln!("Skipping directory {}", directory.to_string_lossy());
+                continue;
+            }
+        };
+
+        let taskbar_config = match {
+            let mut buf = String::new();
+            taskbar_config
+                .read_to_string(&mut buf)
+                .map_err(eyre::Report::from)
+                .and_then(|_| toml::from_str::<WidgetConfig>(&buf).map_err(eyre::Report::from))
+        } {
+            Ok(conf) => conf,
+            Err(e) => {
+                eprintln!(
+                    "Failed to read file {}/taskbar.config.toml; {}",
+                    directory.to_string_lossy(),
+                    e
+                );
+                continue;
+            }
+        };
+
+        let taskbar_component = match {
+            let mut buf = String::new();
+            taskbar_component
+                .read_to_string(&mut buf)
+                .map_err(eyre::Report::from)
+                .and_then(|_| {
+                    quick_xml::de::from_str::<Component>(&buf).map_err(eyre::Report::from)
+                })
+        } {
+            Ok(conf) => conf,
+            Err(e) => {
+                eprintln!(
+                    "Failed to read file {}/taskbar.component.xml; {}",
+                    directory.to_string_lossy(),
+                    e
+                );
+                continue;
+            }
+        };
+
+        let widget = Widget::new(taskbar_config, vec![taskbar_component]);
+        widgets.push(widget);
+    }
+
     let data_source_list: Vec<BoxedDataSource> = vec![
         Box::new(PdhDataSource::new().unwrap()),
         Box::new(GlobalMemoryStatusDataSource),
@@ -37,41 +112,6 @@ fn main() -> eyre::Result<()> {
 
     let mut context = component::SetupContext { data_source };
 
-    let src = r#"
-        <vbox>
-            <hbox y-align="center">
-                <text color="yellow">CPU</text>
-                <margin size="8" />
-                <data-text source="pdh" query="\Processor(_Total)\% Processor Time" format="float" />
-                <margin size="2" />
-                <text>%</text>
-            </hbox>
-            <hbox y-align="center">
-                <text color="yellow">RAM</text>
-                <margin size="8" />
-                <data-text source="global-memory-status" query="dMemoryLoad" format="float" />
-                <margin size="2" />
-                <text>%</text>
-                <margin size="6" />
-                <text>(</text>
-                <data-text source="global-memory-status" query="ullUsedPhys" format="float" divide-by="1073741824" />
-                <margin size="4" />
-                <text>/</text>
-                <margin size="4" />
-                <data-text source="global-memory-status" query="ullTotalPhys" format="float" divide-by="1073741824" />
-                <margin size="4" />
-                <text>GB</text>
-                <text>)</text>
-            </hbox>
-        </vbox>
-    "#;
-
-    let mut widgets = vec![Widget {
-        x: HorizontalPosition::Left(Length::Pixel(16)),
-        y: VerticalPosition::Center,
-        components: vec![quick_xml::de::from_str::<Component>(src).unwrap()],
-    }];
-
     for widget in widgets.iter_mut() {
         widget.setup(&mut context)?;
     }
@@ -80,11 +120,11 @@ fn main() -> eyre::Result<()> {
     overlay.show();
 
     let handle = thread::spawn(move || loop {
-        thread::sleep(Duration::from_millis(2000));
         overlay.update().expect("Should update successfully");
         for data_source in context.data_source.values_mut() {
             data_source.update().expect("Should update successfully");
         }
+        thread::sleep(Duration::from_millis(1000));
     });
 
     overlay.begin_event_loop()?;

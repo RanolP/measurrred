@@ -4,8 +4,8 @@ use windows::Win32::{
     Foundation::{GetLastError, PWSTR},
     System::Performance::{
         PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
-        PDH_CALC_NEGATIVE_DENOMINATOR, PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_FMT_LONG,
-        PDH_INVALID_DATA,
+        PDH_CALC_NEGATIVE_DENOMINATOR, PDH_CSTATUS_INVALID_DATA, PDH_FMT_COUNTERVALUE,
+        PDH_FMT_DOUBLE, PDH_FMT_LARGE, PDH_FMT_LONG, PDH_INVALID_DATA, PDH_NO_DATA,
     },
 };
 
@@ -76,7 +76,8 @@ impl DataSource for PdhDataSource {
                     counter,
                     match preferred_format {
                         DataFormat::Boolean => PDH_FMT_LONG,
-                        DataFormat::Int => PDH_FMT_LONG,
+                        DataFormat::I32 => PDH_FMT_LONG,
+                        DataFormat::I64 | DataFormat::Int => PDH_FMT_LARGE,
                         DataFormat::Float => PDH_FMT_DOUBLE,
                     },
                     null_mut(),
@@ -85,7 +86,10 @@ impl DataSource for PdhDataSource {
             };
             match result {
                 0 => {}
-                PDH_CALC_NEGATIVE_DENOMINATOR | PDH_INVALID_DATA => {
+                PDH_CALC_NEGATIVE_DENOMINATOR
+                | PDH_INVALID_DATA
+                | PDH_NO_DATA
+                | PDH_CSTATUS_INVALID_DATA => {
                     return Ok(Data::Unknown);
                 }
                 _ => {
@@ -97,7 +101,8 @@ impl DataSource for PdhDataSource {
             let data = unsafe {
                 match preferred_format {
                     DataFormat::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
-                    DataFormat::Int => Data::Int(value.Anonymous.largeValue),
+                    DataFormat::I32 => Data::Int(value.Anonymous.longValue as _),
+                    DataFormat::I64 | DataFormat::Int => Data::Int(value.Anonymous.largeValue),
                     DataFormat::Float => Data::Float(value.Anonymous.doubleValue),
                 }
             };

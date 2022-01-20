@@ -1,25 +1,78 @@
-use serde::Deserialize;
+use core::fmt;
 
-pub enum Length {
-    Pixel(i64),
-    ViewboxHeight(f64),
-    ViewboxWidth(f64),
-}
+use serde::{Deserialize, Serialize};
 
-impl Length {
-    pub fn translate_to_px(&self, viewbox_width: f64, viewbox_height: f64) -> f64 {
-        match self {
-            Length::Pixel(px) => px.clone() as f64,
-            Length::ViewboxHeight(percent) => (percent * viewbox_height / 100.0),
-            Length::ViewboxWidth(percent) => (percent * viewbox_width / 100.0),
-        }
-    }
-}
+use super::{HorizontalAlignment, Length, VerticalAlignment};
 
 pub enum HorizontalPosition {
     Left(Length),
     Center,
     Right(Length),
+}
+
+impl fmt::Display for HorizontalPosition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            HorizontalPosition::Left(len) => {
+                if len.is_zero() {
+                    write!(f, "left")
+                } else {
+                    write!(f, "left {}", len)
+                }
+            }
+            HorizontalPosition::Center => write!(f, "center"),
+            HorizontalPosition::Right(len) => {
+                if len.is_zero() {
+                    write!(f, "right")
+                } else {
+                    write!(f, "right {}", len)
+                }
+            }
+        }
+    }
+}
+
+impl Serialize for HorizontalPosition {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for HorizontalPosition {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let err = Err(serde::de::Error::custom(format!(
+            "{} does not match with horizontal position syntax",
+            s
+        )));
+        if s.is_empty() {
+            return err;
+        }
+        let splitted: Vec<_> = s.split(" ").collect();
+        match splitted[0] {
+            "left" => match splitted.len() {
+                1 => Ok(HorizontalPosition::Left(Length::Pixel(0))),
+                2 => Length::from_str(splitted[1]).map(|len| HorizontalPosition::Left(len)),
+                _ => err,
+            },
+            "center" => match splitted.len() {
+                1 => Ok(HorizontalPosition::Center),
+                _ => err,
+            },
+            "right" => match splitted.len() {
+                1 => Ok(HorizontalPosition::Right(Length::Pixel(0))),
+                2 => Length::from_str(splitted[1]).map(|len| HorizontalPosition::Right(len)),
+                _ => err,
+            },
+            _ => err,
+        }
+    }
 }
 
 impl HorizontalPosition {
@@ -52,6 +105,71 @@ pub enum VerticalPosition {
     Bottom(Length),
 }
 
+impl fmt::Display for VerticalPosition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VerticalPosition::Top(len) => {
+                if len.is_zero() {
+                    write!(f, "top")
+                } else {
+                    write!(f, "top {}", len)
+                }
+            }
+            VerticalPosition::Center => write!(f, "center"),
+            VerticalPosition::Bottom(len) => {
+                if len.is_zero() {
+                    write!(f, "bottom")
+                } else {
+                    write!(f, "bottom {}", len)
+                }
+            }
+        }
+    }
+}
+
+impl Serialize for VerticalPosition {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for VerticalPosition {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let err = Err(serde::de::Error::custom(format!(
+            "{} does not match with vertical position syntax",
+            s
+        )));
+        if s.is_empty() {
+            return err;
+        }
+        let splitted: Vec<_> = s.split(" ").collect();
+        match splitted[0] {
+            "top" => match splitted.len() {
+                1 => Ok(VerticalPosition::Top(Length::Pixel(0))),
+                2 => Length::from_str(splitted[1]).map(|len| VerticalPosition::Top(len)),
+                _ => err,
+            },
+            "center" => match splitted.len() {
+                1 => Ok(VerticalPosition::Center),
+                _ => err,
+            },
+            "bottom" => match splitted.len() {
+                1 => Ok(VerticalPosition::Bottom(Length::Pixel(0))),
+                2 => Length::from_str(splitted[1]).map(|len| VerticalPosition::Bottom(len)),
+                _ => err,
+            },
+            _ => err,
+        }
+    }
+}
+
 impl VerticalPosition {
     pub fn to_real_position(
         &self,
@@ -72,42 +190,6 @@ impl VerticalPosition {
                 VerticalAlignment::Bottom.align(viewbox_height, component_height)
                     + length.translate_to_px(viewbox_width, viewbox_height)
             }
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub enum HorizontalAlignment {
-    Left,
-    Center,
-    Right,
-}
-
-impl HorizontalAlignment {
-    pub fn align(&self, viewbox_width: f64, component_width: f64) -> f64 {
-        match self {
-            HorizontalAlignment::Left => 0.0,
-            HorizontalAlignment::Center => viewbox_width / 2.0 - component_width / 2.0,
-            HorizontalAlignment::Right => -component_width,
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub enum VerticalAlignment {
-    Top,
-    Center,
-    Bottom,
-}
-
-impl VerticalAlignment {
-    pub fn align(&self, viewbox_height: f64, component_height: f64) -> f64 {
-        match self {
-            VerticalAlignment::Top => 0.0,
-            VerticalAlignment::Center => viewbox_height / 2.0 - component_height / 2.0,
-            VerticalAlignment::Bottom => -component_height,
         }
     }
 }

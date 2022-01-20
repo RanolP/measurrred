@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hbox>
+    <vbox>
+        <hbox y-align="center">
+            <text color="yellow">CPU</text>
+            <set-position to="42" />
+            <data-text source="pdh" query="\Processor(_Total)\% Processor Time" output-format="float" />
+            <margin size="2" />
+            <text>%</text>
+        </hbox>
+        <hbox y-align="center">
+            <text color="yellow">RAM</text>
+            <set-position to="42" />
+            <data-text source="global-memory-status" query="dMemoryLoad" input-format="float" output-format="float" />
+            <margin size="2" />
+            <text>%</text>
+            <margin size="6" />
+            <text>(</text>
+            <data-text source="global-memory-status" query="ullUsedPhys" input-format="i64" output-format="float" divide-by="1073741824" />
+            <margin size="4" />
+            <text>/</text>
+            <margin size="4" />
+            <data-text source="global-memory-status" query="ullTotalPhys" input-format="i64" output-format="float" divide-by="1073741824" />
+            <margin size="4" />
+            <text>GB</text>
+            <text>)</text>
+        </hbox>
+    </vbox>
+    <margin size="16" />
+    <vbox>
+        <hbox y-align="center">
+            <text color="lime" font-family="Iosevka NF" font-weight="900">祝</text>
+            <margin size="8" />
+            <data-text source="pdh" query="\Network Interface(*)\Bytes Sent/sec" input-format="i32" output-format="float" divide-by="128" />
+            <margin size="2" />
+            <text>kbps</text>
+        </hbox>
+        <hbox y-align="center">
+            <text color="lime" font-family="Iosevka NF" font-weight="900"></text>
+            <margin size="8" />
+            <data-text source="pdh" query="\Network Interface(*)\Bytes Received/sec" input-format="i32" output-format="float" divide-by="128" />
+            <margin size="2" />
+            <text>kbps</text>
+        </hbox>
+    </vbox>
+</hbox>

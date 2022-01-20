@@ -30,21 +30,20 @@ impl DataSource for GlobalMemoryStatusDataSource {
                 "dwMemoryLoad" => mem.dwMemoryLoad as f64,
                 "ullTotalPhys" => mem.ullTotalPhys as f64,
                 "ullAvailPhys" => mem.ullAvailPhys as f64,
-                "ullUsedPhys" => mem.ullTotalPhys as f64 - mem.ullAvailPhys as f64,
+                "ullUsedPhys" => (mem.ullTotalPhys - mem.ullAvailPhys) as f64,
                 "ullTotalPageFile" => mem.ullTotalPageFile as f64,
                 "ullAvailPageFile" => mem.ullAvailPageFile as f64,
                 "ullTotalVirtual" => mem.ullTotalVirtual as f64,
                 "ullAvailVirtual" => mem.ullAvailVirtual as f64,
                 "ullAvailExtendedVirtual" => mem.ullAvailExtendedVirtual as f64,
                 "dMemoryLoad" => {
-                    (mem.ullTotalPhys as f64 - mem.ullAvailPhys as f64) / mem.ullTotalPhys as f64
-                        * 100.0
+                    (mem.ullTotalPhys - mem.ullAvailPhys) as f64 / mem.ullTotalPhys as f64 * 100.0
                 }
                 _ => eyre::bail!("Unknown query: {}", query),
             };
 
             let data = match preferred_format {
-                DataFormat::Int => Data::Int(result as i64),
+                DataFormat::I32 | DataFormat::I64 | DataFormat::Int => Data::Int(result as i64),
                 DataFormat::Float => Data::Float(result),
                 DataFormat::Boolean => Data::Int(result as i64),
             };

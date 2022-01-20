@@ -168,7 +168,7 @@ unsafe extern "system" fn wndproc(
         .fontdb
         .load_fonts_dir(std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"));
 
-    match message as u32 {
+    match message {
         WM_PAINT => {
             let mut rect = RECT::default();
             GetClientRect(window, &mut rect);

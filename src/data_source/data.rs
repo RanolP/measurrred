@@ -4,6 +4,8 @@ use thiserror::Error;
 #[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum DataFormat {
+    I32,
+    I64,
     Int,
     Float,
     Boolean,
