@@ -22,11 +22,15 @@ pub struct Text {
 impl ComponentRender for Text {
     fn render(&self, context: RenderContext) -> eyre::Result<Node> {
         // resvg lacks dominant-baseline support ;(
+        let font_family = self
+            .font_family
+            .as_ref()
+            .unwrap_or(&context.config.font_family);
         let font_id = context
             .usvg_options
             .fontdb
             .query(&Query {
-                families: &[Family::Name(&context.config.font_family)],
+                families: &[Family::Name(font_family)],
                 ..Default::default()
             })
             .unwrap();
@@ -62,10 +66,7 @@ impl ComponentRender for Text {
                 .as_ref()
                 .unwrap_or(&context.config.foreground_color),
             font_size = self.font_size.as_ref().unwrap_or(&16.0),
-            font_family = self
-                .font_family
-                .as_ref()
-                .unwrap_or(&context.config.font_family),
+            font_family = font_family,
             font_weight = self
                 .font_weight
                 .as_ref()
