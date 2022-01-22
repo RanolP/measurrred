@@ -2,6 +2,7 @@ use std::ptr::null_mut;
 
 use once_cell::sync::OnceCell;
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
+use tracing_unwrap::{OptionExt, ResultExt};
 use usvg::{Color, Options};
 use windows::Win32::{
     Foundation::{GetLastError, HWND, LPARAM, LRESULT, PWSTR, RECT, WPARAM},
@@ -19,12 +20,12 @@ use windows::Win32::{
     },
 };
 
-use crate::{system::ToWindowsColor, taskbar::Taskbar, widget::Widget};
+use crate::{platform::taskbar::TaskbarHandle, system::ToWindowsColor, widget::Widget};
 
 static TASKBAR_OVERLAY: OnceCell<TaskbarOverlay> = OnceCell::new();
 
 pub struct TaskbarOverlay {
-    target: Taskbar,
+    target: TaskbarHandle,
     window: HWND,
     background_color: u32,
     transparent_background: bool,
@@ -34,7 +35,7 @@ pub struct TaskbarOverlay {
 impl TaskbarOverlay {
     pub fn try_initialize(widgets: Vec<Widget>) -> eyre::Result<&'static TaskbarOverlay> {
         TASKBAR_OVERLAY.get_or_try_init(|| {
-            let taskbar = Taskbar::new()?;
+            let taskbar = TaskbarHandle::collect().unwrap_or_log().remove(0);
             let taskbar_rect = taskbar.rect()?;
 
             let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;

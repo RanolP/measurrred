@@ -14,8 +14,8 @@ use widget::load_widget;
 mod component;
 mod config;
 mod data_source;
+mod platform;
 mod system;
-mod taskbar;
 mod taskbar_overlay;
 mod widget;
 
@@ -40,7 +40,11 @@ fn main() -> eyre::Result<()> {
         let widget = match load_widget(&directory) {
             Ok(widget) => widget,
             Err(e) => {
-                eprintln!("Skipping directory {}: {}", directory.to_string_lossy(), e);
+                eprintln!(
+                    "Skipping directory {} due to an error\n└ {}",
+                    directory.to_string_lossy(),
+                    e
+                );
                 continue;
             }
         };

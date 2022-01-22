@@ -1,3 +1,5 @@
 fn main() {
-    embed_resource::compile("meassurred-manifest.rc");
+    if cfg!(target_os = "windows") {
+        embed_resource::compile("meassurred-manifest.rc");
+    }
 }
