@@ -9,28 +9,28 @@ use crate::{
 };
 
 pub use self::config::WidgetConfig;
+pub use self::loader::*;
 
 mod config;
+mod loader;
 
 pub struct Widget {
     pub x: HorizontalPosition,
     pub y: VerticalPosition,
-    pub components: Vec<Component>,
+    pub component: Component,
 }
 
 impl Widget {
-    pub fn new(config: WidgetConfig, components: Vec<Component>) -> Widget {
+    pub fn new(config: WidgetConfig, components: Component) -> Widget {
         Widget {
             x: config.position.x,
             y: config.position.y,
-            components,
+            component: components,
         }
     }
 
     pub fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        for component in self.components.iter_mut() {
-            component.setup(context)?;
-        }
+        self.component.setup(context)?;
 
         Ok(())
     }
@@ -64,41 +64,28 @@ impl Widget {
                 },
             },
         });
-        let mut nodes = Vec::new();
-        let mut mostleft = 0.0;
-        let mut mostright = 0.0;
-        let mut mosttop = 0.0;
-        let mut mostbottom = 0.0;
-        for component in &self.components {
-            let node = component.render(context.clone())?;
-            let bbox = node.calculate_bbox().unwrap();
-            mostleft = f64::min(mostleft, bbox.left());
-            mostright = f64::max(mostright, bbox.right());
-            mosttop = f64::min(mosttop, bbox.top());
-            mostbottom = f64::max(mostbottom, bbox.bottom());
-            nodes.push(node);
-        }
-        let total_width = mostright - mostleft;
-        let total_height = mostbottom - mosttop;
+
+        let node = self.component.render(context.clone())?;
+        let bbox = node.calculate_bbox().unwrap();
 
         let transform = Transform::from_translate(
             self.x
-                .to_real_position(viewbox_width, viewbox_height, total_width, total_height)
+                .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
                 as f32,
             self.y
-                .to_real_position(viewbox_width, viewbox_height, total_width, total_height)
+                .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
                 as f32,
         );
-        for node in nodes {
-            render_node(
-                &tree,
-                &node,
-                FitTo::Original,
-                transform.clone(),
-                target.as_mut(),
-            )
-            .unwrap();
-        }
+
+        render_node(
+            &tree,
+            &node,
+            FitTo::Original,
+            transform.clone(),
+            target.as_mut(),
+        )
+        .unwrap();
+
         Ok(())
     }
 }

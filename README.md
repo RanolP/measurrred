@@ -15,8 +15,6 @@
   - Weather
   - Disk usage
   - Fan speed
-  - Clock
-- Do not patch explorer.exe at all
 
 ### Features I Want to Implement
 

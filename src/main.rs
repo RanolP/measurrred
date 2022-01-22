@@ -1,18 +1,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::io::Read;
+use std::collections::HashMap;
+
 use std::time::Duration;
-use std::{collections::HashMap, ptr::null_mut};
 use std::{fs, thread};
 
-use component::Component;
 use data_source::{BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource};
 
 use taskbar_overlay::TaskbarOverlay;
 
-use widget::{Widget, WidgetConfig};
-use windows::Win32::System::Com::{CoInitializeEx, COINIT_APARTMENTTHREADED};
-use windows::Win32::System::Performance::PdhEnumObjectItemsW;
+use widget::load_widget;
 
 mod component;
 mod config;
@@ -23,10 +20,7 @@ mod taskbar_overlay;
 mod widget;
 
 fn main() -> eyre::Result<()> {
-    unsafe {
-        CoInitializeEx(null_mut(), COINIT_APARTMENTTHREADED)?;
-    }
-
+    tracing_subscriber::fmt::init();
     let mut widgets = Vec::new();
 
     for directory in fs::read_dir("widgets")
@@ -43,60 +37,14 @@ fn main() -> eyre::Result<()> {
         .unwrap_or(Vec::new())
     {
         let directory = directory.path();
-        let mut taskbar_config = match fs::File::open(directory.join("taskbar.config.toml")) {
-            Ok(file) => file,
-            Err(_) => {
-                eprintln!("Skipping directory {}", directory.to_string_lossy());
-                continue;
-            }
-        };
-        let mut taskbar_component = match fs::File::open(directory.join("taskbar.component.xml")) {
-            Ok(file) => file,
-            Err(_) => {
-                eprintln!("Skipping directory {}", directory.to_string_lossy());
-                continue;
-            }
-        };
-
-        let taskbar_config = match {
-            let mut buf = String::new();
-            taskbar_config
-                .read_to_string(&mut buf)
-                .map_err(eyre::Report::from)
-                .and_then(|_| toml::from_str::<WidgetConfig>(&buf).map_err(eyre::Report::from))
-        } {
-            Ok(conf) => conf,
+        let widget = match load_widget(&directory) {
+            Ok(widget) => widget,
             Err(e) => {
-                eprintln!(
-                    "Failed to read file {}/taskbar.config.toml; {}",
-                    directory.to_string_lossy(),
-                    e
-                );
+                eprintln!("Skipping directory {}: {}", directory.to_string_lossy(), e);
                 continue;
             }
         };
 
-        let taskbar_component = match {
-            let mut buf = String::new();
-            taskbar_component
-                .read_to_string(&mut buf)
-                .map_err(eyre::Report::from)
-                .and_then(|_| {
-                    quick_xml::de::from_str::<Component>(&buf).map_err(eyre::Report::from)
-                })
-        } {
-            Ok(conf) => conf,
-            Err(e) => {
-                eprintln!(
-                    "Failed to read file {}/taskbar.component.xml; {}",
-                    directory.to_string_lossy(),
-                    e
-                );
-                continue;
-            }
-        };
-
-        let widget = Widget::new(taskbar_config, vec![taskbar_component]);
         widgets.push(widget);
     }
 
