@@ -1,6 +1,5 @@
 foreground-color = "white"
 background-color = "black"
-# font-family = "Noto Sans CJK KR Bold"
+font-family = "Noto Sans CJK KR Bold"
 
-font-family = "Iosevka NF"
 refresh-interval = 1000
