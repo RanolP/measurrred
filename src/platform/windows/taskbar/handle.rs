@@ -6,8 +6,12 @@ use windows::Win32::{
     UI::WindowsAndMessaging::{EnumWindows, GetClassNameW, GetWindowRect},
 };
 
-#[derive(Debug)]
-pub struct TaskbarHandle(pub HWND);
+use crate::system::Rect;
+
+#[derive(Clone, Debug)]
+pub struct TaskbarHandle {
+    pub(super) hwnd: HWND,
+}
 
 impl TaskbarHandle {
     pub fn collect() -> windows::core::Result<Vec<TaskbarHandle>> {
@@ -40,7 +44,7 @@ impl TaskbarHandle {
                 let found_windows = (lparam.0 as *mut ResultVec).as_mut().unwrap_or_log();
 
                 if is_taskbar_handle(hwnd) {
-                    found_windows.push(TaskbarHandle(hwnd));
+                    found_windows.push(TaskbarHandle { hwnd });
                 }
 
                 BOOL::from(true)
@@ -55,10 +59,10 @@ impl TaskbarHandle {
         Ok(found_windows)
     }
 
-    pub fn rect(&self) -> windows::core::Result<RECT> {
+    pub fn rect(&self) -> windows::core::Result<Rect> {
         let mut result = RECT::default();
-        unsafe { GetWindowRect(self.0, &mut result) }.ok()?;
+        unsafe { GetWindowRect(self.hwnd, &mut result) }.ok()?;
 
-        Ok(result)
+        Ok(result.into())
     }
 }

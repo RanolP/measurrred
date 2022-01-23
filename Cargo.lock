@@ -302,6 +302,7 @@ dependencies = [
  "quick-xml",
  "resvg",
  "serde",
+ "svgtypes",
  "thiserror",
  "tiny-skia",
  "toml",

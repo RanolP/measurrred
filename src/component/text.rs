@@ -64,7 +64,7 @@ impl ComponentRender for Text {
             color = self
                 .color
                 .as_ref()
-                .unwrap_or(&context.config.foreground_color),
+                .unwrap_or(&context.config.foreground_color.to_string()),
             font_size = self.font_size.as_ref().unwrap_or(&16.0),
             font_family = font_family,
             font_weight = self

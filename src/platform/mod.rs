@@ -1,4 +1,5 @@
 #[cfg(target_os = "windows")]
-mod windows;
-#[cfg(target_os = "windows")]
-pub use self::windows::*;
+#[path = "windows/mod.rs"]
+mod platform;
+
+pub use self::platform::*;

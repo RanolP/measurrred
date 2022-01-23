@@ -13,6 +13,7 @@ usvg = "0.20.0"
 resvg = "0.20.0"
 tiny-skia = "0.6.2"
 ttf-parser = "0.14.0"
+svgtypes = "0.8.0"
 
 serde = { version = "1.0.134", features = ["derive"] }
 quick-xml = { version = "0.22.0", features = ["serialize"] }

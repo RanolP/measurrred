@@ -35,16 +35,14 @@ impl Widget {
         Ok(())
     }
 
-    pub fn render(&self, options: &Options, target: &mut Pixmap) -> eyre::Result<()> {
+    pub fn render(
+        &self,
+        config: &MeasurrredConfig,
+        options: &Options,
+        target: &mut Pixmap,
+    ) -> eyre::Result<()> {
         let viewbox_width = target.width() as f64;
         let viewbox_height = target.height() as f64;
-
-        let config = MeasurrredConfig {
-            foreground_color: "white".to_string(),
-            background_color: "black".to_string(),
-            font_family: "Noto Sans CJK KR Bold".to_string(),
-        };
-        let config = &config;
 
         let context = RenderContext {
             viewbox_width,
