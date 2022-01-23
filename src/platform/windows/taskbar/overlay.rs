@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    ptr::null_mut,
-    sync::{Mutex, RwLock},
-};
+use std::{collections::HashMap, ptr::null_mut, sync::RwLock};
 
 use once_cell::sync::Lazy;
 use thiserror::Error;

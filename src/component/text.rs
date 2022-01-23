@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use serde::Deserialize;
+use tracing_unwrap::OptionExt;
 use usvg::{
     fontdb::{Family, Query},
     Group, Node, NodeExt, NodeKind, Path, PathData, Rect, Tree,
@@ -22,6 +23,7 @@ pub struct Text {
 impl ComponentRender for Text {
     fn render(&self, context: RenderContext) -> eyre::Result<Node> {
         // resvg lacks dominant-baseline support ;(
+        let font_size = self.font_size.unwrap_or(16.0);
         let font_family = self
             .font_family
             .as_ref()
@@ -33,16 +35,16 @@ impl ComponentRender for Text {
                 families: &[Family::Name(font_family)],
                 ..Default::default()
             })
-            .unwrap();
+            .expect_or_log(&format!("Failed to find font {}", &font_family));
         let (height, ascender) = context
             .usvg_options
             .fontdb
             .with_face_data(font_id, |data, face_index| -> eyre::Result<_> {
                 let font = ttf_parser::Face::from_slice(data, face_index)?;
-                let scale = self.font_size.unwrap_or(16.0) / font.units_per_em() as f64;
+                let scale = font_size / font.units_per_em() as f64;
                 Ok((scale * font.height() as f64, scale * font.ascender() as f64))
             })
-            .unwrap()?;
+            .unwrap_or_log()?;
 
         let svg = format!(
             r#"
@@ -65,7 +67,7 @@ impl ComponentRender for Text {
                 .color
                 .as_ref()
                 .unwrap_or(&context.config.foreground_color.to_string()),
-            font_size = self.font_size.as_ref().unwrap_or(&16.0),
+            font_size = font_size,
             font_family = font_family,
             font_weight = self
                 .font_weight

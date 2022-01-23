@@ -1,3 +1,5 @@
+#![cfg(target_os = "windows")]
+
 use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
 
 use super::{Data, DataFormat, DataHandle, DataSource};

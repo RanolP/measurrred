@@ -12,11 +12,11 @@ use super::{Widget, WidgetConfig};
 
 #[derive(Error, Debug)]
 pub enum WidgetLoadError {
-    #[error("I/O error from {0}: {1}")]
+    #[error("I/O failed from {0}")]
     Io(PathBuf, #[source] std::io::Error),
-    #[error("Failed to deserialize {0}: {1}")]
+    #[error("Failed to deserialize {0}")]
     TomlDeserialize(PathBuf, #[source] toml::de::Error),
-    #[error("Failed to deserialize {0}: {1}")]
+    #[error("Failed to deserialize {0}")]
     XmlDeserialize(PathBuf, #[source] quick_xml::DeError),
 }
 

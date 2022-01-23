@@ -1,3 +1,5 @@
+#![cfg(target_os = "windows")]
+
 use std::{collections::HashMap, ptr::null_mut};
 
 use windows::Win32::{

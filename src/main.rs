@@ -10,6 +10,7 @@ use data_source::{BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource};
 
 use platform::taskbar::{TaskbarHandle, TaskbarOverlay};
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
+use tracing::{error, info};
 use tracing_unwrap::ResultExt;
 use usvg::Options;
 use widget::load_widget;
@@ -24,12 +25,13 @@ mod widget;
 fn main() -> eyre::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let config = MeasurrredConfig {
-        foreground_color: "white".parse().unwrap_or_log(),
-        background_color: "black".parse().unwrap_or_log(),
-        font_family: "Noto Sans CJK KR Bold".to_string(),
-    };
+    info!("Starting");
 
+    let config = MeasurrredConfig::load()?;
+
+    info!("Config loaded.");
+
+    info!("Initializing widgets");
     let mut widgets = Vec::new();
 
     for directory in fs::read_dir("widgets")
@@ -46,10 +48,13 @@ fn main() -> eyre::Result<()> {
         .unwrap_or(Vec::new())
     {
         let directory = directory.path();
+
+        info!("Visiting directory {}", directory.to_string_lossy());
+
         let widget = match load_widget(&directory) {
             Ok(widget) => widget,
             Err(e) => {
-                eprintln!(
+                error!(
                     "Skipping directory {} due to an error\n└ {}",
                     directory.to_string_lossy(),
                     e
@@ -62,7 +67,7 @@ fn main() -> eyre::Result<()> {
     }
 
     let data_source_list: Vec<BoxedDataSource> = vec![
-        Box::new(PdhDataSource::new().unwrap()),
+        Box::new(PdhDataSource::new().unwrap_or_log()),
         Box::new(GlobalMemoryStatusDataSource),
     ];
     let data_source = HashMap::from_iter(
@@ -85,13 +90,18 @@ fn main() -> eyre::Result<()> {
     let mut options = Options::default();
     options.fontdb.load_system_fonts();
 
-    let local_appdata = std::env::var("LocalAppdata").unwrap();
-    options
-        .fontdb
-        .load_fonts_dir(std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"));
+    if cfg!(target_os = "windows") {
+        let local_appdata = std::env::var("LocalAppdata").unwrap();
+        options.fontdb.load_fonts_dir(
+            std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"),
+        );
+    }
+
+    info!("Hello, measurrred!");
+
     let mut overlay_w = overlay.clone();
     let handle = thread::spawn(move || loop {
-        let taskbar_rect = overlay_w.target.rect().unwrap();
+        let taskbar_rect = overlay_w.target.rect().unwrap_or_log();
         let width = taskbar_rect.width();
         let height = taskbar_rect.height();
         let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
@@ -113,7 +123,7 @@ fn main() -> eyre::Result<()> {
         for data_source in context.data_source.values_mut() {
             data_source.update().unwrap_or_log();
         }
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(config.refresh_interval));
     });
 
     overlay.begin_event_loop()?;

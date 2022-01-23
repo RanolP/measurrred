@@ -1,15 +1,6 @@
-[general]
+foreground-color = "white"
+background-color = "black"
+# font-family = "Noto Sans CJK KR Bold"
+
+font-family = "Iosevka NF"
 refresh-interval = 1000
-
-[panel.left]
-items = ["cpu", "ram", "network-up", "network-down"]
-alignmnet = [1, 1, 2, 2]
-
-[panel.right]
-items = []
-alignment = []
-
-[component.default]
-font = "Pretendard"
-
-[component.cpu]
