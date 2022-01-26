@@ -83,12 +83,11 @@ impl ComponentRender for Text {
             _ => node.calculate_bbox().unwrap().width(),
         };
 
-        let rect = Node::new(NodeKind::Path({
-            let mut path = Path::default();
-            path.data = Rc::new(PathData::from_rect(
-                Rect::new(0.0, 0.0, width, height).unwrap(),
-            ));
-            path
+        let rect = Node::new(NodeKind::Path(Path {
+            data: Rc::new(PathData::from_rect(
+                Rect::new(0.0, 0.0, width, height).unwrap_or_log(),
+            )),
+            ..Default::default()
         }));
 
         let mut group = Node::new(NodeKind::Group(Group::default()));

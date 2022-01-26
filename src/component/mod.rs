@@ -35,6 +35,11 @@ pub enum Component {
     Margin { size: f64 },
     #[serde(rename = "set-position")]
     SetPosition { to: f64 },
+    #[serde(rename = "overlap")]
+    Overlap {
+        #[serde(rename = "$value")]
+        child: Box<Component>,
+    },
     #[serde(other)]
     Ignore,
 }
@@ -47,6 +52,7 @@ impl ComponentSetup for Component {
             Component::VBox(vbox) => vbox.setup(context),
             Component::DataText(data_text) => data_text.setup(context),
             Component::DataGraph(data_graph) => data_graph.setup(context),
+            Component::Overlap { child } => child.setup(context),
             Component::SetPosition { .. } | Component::Margin { .. } | Component::Ignore => Ok(()),
         }
     }
@@ -60,6 +66,7 @@ impl ComponentRender for Component {
             Component::VBox(vbox) => vbox.render(context),
             Component::DataText(data_text) => data_text.render(context),
             Component::DataGraph(data_graph) => data_graph.render(context),
+            Component::Overlap { child } => child.render(context),
             Component::SetPosition { .. } | Component::Margin { .. } | Component::Ignore => {
                 Ok(Node::new(NodeKind::Group(Group::default())))
             }

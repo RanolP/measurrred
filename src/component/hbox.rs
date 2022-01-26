@@ -27,29 +27,44 @@ impl ComponentSetup for HBox {
 
 impl ComponentRender for HBox {
     fn render(&mut self, render_context: RenderContext) -> eyre::Result<Node> {
+        let mut last_x_mod = 0.0;
         let mut x = 0.0;
         let mut container_height = 0.0;
         let mut nodes = Vec::new();
         let mut result = Node::new(NodeKind::Group(Group::default()));
         for child in self.children.iter_mut() {
-            match &child {
+            match child {
                 Component::Margin { size } => {
-                    x += size;
-                    continue;
+                    x += *size;
+                    last_x_mod = *size;
                 }
                 Component::SetPosition { to } => {
                     x = *to;
-                    continue;
+                    last_x_mod = 0.0;
                 }
-                _ => {}
+                Component::Overlap { child } => {
+                    let child_node = child.render(render_context.clone())?;
+                    let bbox = child_node.calculate_bbox().unwrap();
+
+                    nodes.push((x - last_x_mod, child_node));
+
+                    x += f64::max(bbox.width() - last_x_mod, 0.0);
+                    container_height = f64::max(container_height, bbox.height());
+
+                    last_x_mod = f64::max(bbox.width(), last_x_mod);
+                }
+                _ => {
+                    let child_node = child.render(render_context.clone())?;
+                    let bbox = child_node.calculate_bbox().unwrap();
+
+                    nodes.push((x, child_node));
+
+                    x += bbox.width();
+                    container_height = f64::max(container_height, bbox.height());
+
+                    last_x_mod = bbox.width();
+                }
             }
-            let child_node = child.render(render_context.clone())?;
-            let bbox = child_node.calculate_bbox().unwrap();
-
-            nodes.push((x, child_node));
-
-            x += bbox.width();
-            container_height = f64::max(container_height, bbox.height());
         }
 
         result.append(Node::new(NodeKind::Path({

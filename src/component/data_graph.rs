@@ -2,7 +2,9 @@ use std::{collections::LinkedList, rc::Rc, str::FromStr};
 
 use serde::Deserialize;
 use tracing_unwrap::{OptionExt, ResultExt};
-use usvg::{Group, Node, NodeKind, Paint, Path, PathData, Rect, Stroke, StrokeWidth};
+use usvg::{
+    Fill, Group, Node, NodeKind, Opacity, Paint, Path, PathData, Rect, Stroke, StrokeWidth,
+};
 
 use crate::{
     data_source::{DataFormat, DataHandle},
@@ -22,6 +24,13 @@ pub struct DataGraph {
     #[serde(default = "default_sample_count")]
     sample_count: usize,
 
+    stroke_color: Color,
+    stroke_width: f64,
+
+    fill_color: Option<Color>,
+    #[serde(default = "default_fill_opacity")]
+    fill_opacity: f64,
+
     source: String,
     query: String,
     input_format: Option<DataFormat>,
@@ -34,6 +43,10 @@ pub struct DataGraph {
 
 const fn default_sample_count() -> usize {
     10
+}
+
+const fn default_fill_opacity() -> f64 {
+    0.6
 }
 
 impl ComponentSetup for DataGraph {
@@ -62,23 +75,37 @@ impl ComponentRender for DataGraph {
         self.samples.pop_front();
         self.samples.push_back(data);
 
-        let mut path_data = PathData::new();
-        let mut is_first_data = true;
+        let mut line = PathData::new();
+        let mut fill = PathData::new();
+        let mut first_point = None;
+        let mut last_point = None;
 
         for (i, sample) in self.samples.iter().enumerate() {
             if sample.is_nan() {
                 continue;
             }
 
-            let x = i as f64 * self.width / self.sample_count as f64;
+            let x = i as f64 * self.width / (self.sample_count - 1) as f64;
             let y = self.height - (sample - self.min) / (self.max - self.min) * self.height;
 
-            if is_first_data {
-                path_data.push_move_to(x, y);
-                is_first_data = false;
+            if first_point.is_none() {
+                line.push_move_to(x, y);
+                fill.push_move_to(x, self.height);
+                fill.push_line_to(x, y);
+                first_point = Some((x, y));
             } else {
-                path_data.push_line_to(x, y);
+                line.push_line_to(x, y);
+                fill.push_line_to(x, y);
             }
+
+            last_point = Some((x, y));
+        }
+
+        if let Some((x, y)) = last_point {
+            fill.push_line_to(self.width, self.height);
+        }
+        if let Some((x, y)) = first_point {
+            fill.push_line_to(x, self.height);
         }
 
         let mut group = Node::new(NodeKind::Group(Group::default()));
@@ -91,10 +118,22 @@ impl ComponentRender for DataGraph {
         })));
 
         group.append(Node::new(NodeKind::Path(Path {
-            data: Rc::new(path_data),
+            data: Rc::new(line),
             stroke: Some(Stroke {
-                paint: Paint::Color(Color::from_str("red").unwrap_or_log().to_usvg_color()),
-                width: StrokeWidth::new(4.0),
+                paint: Paint::Color(self.stroke_color.to_usvg_color()),
+                width: StrokeWidth::new(self.stroke_width),
+                ..Default::default()
+            }),
+            ..Default::default()
+        })));
+
+        let fill_color = self.fill_color.as_ref().unwrap_or(&self.stroke_color);
+
+        group.append(Node::new(NodeKind::Path(Path {
+            data: Rc::new(fill),
+            fill: Some(Fill {
+                paint: Paint::Color(fill_color.to_usvg_color()),
+                opacity: Opacity::new(self.fill_opacity),
                 ..Default::default()
             }),
             ..Default::default()
