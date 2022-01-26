@@ -4,7 +4,7 @@
 
 `global-memory-status` data source fetches data using [`GlobalMemoryStatusEx`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex) Function.
 
-It accepts a query that respectfully matching with the field of [`MEMORYSTATUSEX`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex) struct. And a bit more fields for convenience. See following table for more information.
+It accepts a query matched with the field of [`MEMORYSTATUSEX`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex) struct respectively. And a bit more fields for convenience. See following table for more information.
 
 | Query                                       | Description                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
