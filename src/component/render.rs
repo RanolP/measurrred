@@ -11,5 +11,5 @@ pub struct RenderContext<'a> {
 }
 
 pub trait ComponentRender {
-    fn render(&self, context: RenderContext) -> eyre::Result<Node>;
+    fn render(&mut self, context: RenderContext) -> eyre::Result<Node>;
 }

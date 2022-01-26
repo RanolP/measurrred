@@ -21,7 +21,7 @@ pub struct Text {
 }
 
 impl ComponentRender for Text {
-    fn render(&self, context: RenderContext) -> eyre::Result<Node> {
+    fn render(&mut self, context: RenderContext) -> eyre::Result<Node> {
         // resvg lacks dominant-baseline support ;(
         let font_size = self.font_size.unwrap_or(16.0);
         let font_family = self

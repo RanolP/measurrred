@@ -36,7 +36,7 @@ impl Widget {
     }
 
     pub fn render(
-        &self,
+        &mut self,
         config: &MeasurrredConfig,
         options: &Options,
         target: &mut Pixmap,

@@ -7,6 +7,18 @@
             <data-text source="pdh" query="\Processor(_Total)\% Processor Time" output-format="float" />
             <margin size="2" />
             <text>%</text>
+            <margin size="8" />
+            <data-graph 
+                width="150"
+                height="20"
+
+                min="0"
+                max="100"
+
+                source="pdh"
+                query="\Processor(_Total)\% Processor Time"
+                input-format="float" 
+            />
         </hbox>
         <hbox y-align="center">
             <text color="yellow">RAM</text>

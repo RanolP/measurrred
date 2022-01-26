@@ -1,14 +1,16 @@
 use serde::Deserialize;
 use usvg::{Group, Node, NodeKind};
 
+use self::data_graph::DataGraph;
 use self::data_text::DataText;
-pub use self::hbox::HBox;
-pub use self::render::{ComponentRender, RenderContext};
-pub use self::setup::ComponentSetup;
-pub use self::setup::SetupContext;
-pub use self::text::Text;
+use self::hbox::HBox;
+use self::text::Text;
 use self::vbox::VBox;
 
+pub use self::render::{ComponentRender, RenderContext};
+pub use self::setup::{ComponentSetup, SetupContext};
+
+mod data_graph;
 mod data_text;
 mod hbox;
 mod text;
@@ -27,6 +29,8 @@ pub enum Component {
     VBox(VBox),
     #[serde(rename = "data-text")]
     DataText(DataText),
+    #[serde(rename = "data-graph")]
+    DataGraph(DataGraph),
     #[serde(rename = "margin")]
     Margin { size: f64 },
     #[serde(rename = "set-position")]
@@ -42,18 +46,20 @@ impl ComponentSetup for Component {
             Component::HBox(hbox) => hbox.setup(context),
             Component::VBox(vbox) => vbox.setup(context),
             Component::DataText(data_text) => data_text.setup(context),
+            Component::DataGraph(data_graph) => data_graph.setup(context),
             Component::SetPosition { .. } | Component::Margin { .. } | Component::Ignore => Ok(()),
         }
     }
 }
 
 impl ComponentRender for Component {
-    fn render(&self, context: RenderContext) -> eyre::Result<Node> {
+    fn render(&mut self, context: RenderContext) -> eyre::Result<Node> {
         match self {
             Component::Text(text) => text.render(context),
             Component::HBox(hbox) => hbox.render(context),
             Component::VBox(vbox) => vbox.render(context),
             Component::DataText(data_text) => data_text.render(context),
+            Component::DataGraph(data_graph) => data_graph.render(context),
             Component::SetPosition { .. } | Component::Margin { .. } | Component::Ignore => {
                 Ok(Node::new(NodeKind::Group(Group::default())))
             }

@@ -26,19 +26,19 @@ impl ComponentSetup for VBox {
 }
 
 impl ComponentRender for VBox {
-    fn render(&self, render_context: RenderContext) -> eyre::Result<Node> {
+    fn render(&mut self, render_context: RenderContext) -> eyre::Result<Node> {
         let mut y = 0.0;
         let mut container_width = 0.0;
         let mut nodes = Vec::new();
         let mut result = Node::new(NodeKind::Group(Group::default()));
-        for child in &self.children {
-            match child {
-                &Component::Margin { size } => {
+        for child in self.children.iter_mut() {
+            match &child {
+                Component::Margin { size } => {
                     y += size;
                     continue;
                 }
-                &Component::SetPosition { to } => {
-                    y -= to;
+                Component::SetPosition { to } => {
+                    y = *to;
                     continue;
                 }
                 _ => {}

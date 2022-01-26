@@ -46,7 +46,7 @@ impl ComponentSetup for DataText {
 }
 
 impl ComponentRender for DataText {
-    fn render(&self, context: RenderContext) -> eyre::Result<usvg::Node> {
+    fn render(&mut self, context: RenderContext) -> eyre::Result<usvg::Node> {
         let divide_by = self.divide_by.unwrap_or(1.0);
         let handle = self.handle.as_ref().unwrap();
         let content = match self.output_format {
@@ -60,7 +60,7 @@ impl ComponentRender for DataText {
             ),
             DataFormat::Boolean => format!("{}", handle.read_bool(false)?),
         };
-        let text = Text {
+        let mut text = Text {
             color: self.color.clone(),
             font_size: self.font_size.clone(),
             font_family: self.font_family.clone(),

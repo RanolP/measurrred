@@ -26,19 +26,19 @@ impl ComponentSetup for HBox {
 }
 
 impl ComponentRender for HBox {
-    fn render(&self, render_context: RenderContext) -> eyre::Result<Node> {
+    fn render(&mut self, render_context: RenderContext) -> eyre::Result<Node> {
         let mut x = 0.0;
         let mut container_height = 0.0;
         let mut nodes = Vec::new();
         let mut result = Node::new(NodeKind::Group(Group::default()));
-        for child in &self.children {
-            match child {
-                &Component::Margin { size } => {
+        for child in self.children.iter_mut() {
+            match &child {
+                Component::Margin { size } => {
                     x += size;
                     continue;
                 }
-                &Component::SetPosition { to } => {
-                    x = to;
+                Component::SetPosition { to } => {
+                    x = *to;
                     continue;
                 }
                 _ => {}
