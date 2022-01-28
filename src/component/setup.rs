@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
+use usvg::Options;
+
 use crate::data_source::BoxedDataSource;
 
 pub struct SetupContext {
     pub data_source: HashMap<&'static str, BoxedDataSource>,
+    pub usvg_options: Options,
 }
 
 impl SetupContext {

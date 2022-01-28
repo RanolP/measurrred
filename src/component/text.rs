@@ -9,6 +9,20 @@ use usvg::{
 
 use super::{ComponentRender, RenderContext};
 
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TextAlign {
+    Left,
+    Center,
+    Right,
+}
+
+impl Default for TextAlign {
+    fn default() -> Self {
+        TextAlign::Left
+    }
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Text {
@@ -16,26 +30,48 @@ pub struct Text {
     pub font_size: Option<f64>,
     pub font_family: Option<String>,
     pub font_weight: Option<String>,
+    #[serde(default)]
+    pub text_align: TextAlign,
     #[serde(rename = "$value")]
     pub content: String,
 }
 
 impl ComponentRender for Text {
-    fn render(&mut self, context: RenderContext) -> eyre::Result<Node> {
+    fn render(&mut self, context: &RenderContext) -> eyre::Result<Node> {
         // resvg lacks dominant-baseline support ;(
         let font_size = self.font_size.unwrap_or(16.0);
         let font_family = self
             .font_family
             .as_ref()
             .unwrap_or(&context.config.font_family);
-        let font_id = context
-            .usvg_options
-            .fontdb
-            .query(&Query {
-                families: &[Family::Name(font_family)],
-                ..Default::default()
-            })
-            .expect_or_log(&format!("Failed to find font {}", &font_family));
+
+        let font_id = match context.usvg_options.fontdb.query(&Query {
+            families: &[Family::Name(font_family)],
+            ..Default::default()
+        }) {
+            Some(font_id) => font_id,
+            None => {
+                eyre::bail!(
+                    "Failed to find font {}, you may wanted to use one of these fonts: {}",
+                    &font_family,
+                    {
+                        let mut families = context
+                            .usvg_options
+                            .fontdb
+                            .faces()
+                            .iter()
+                            .map(|face| face.family.clone())
+                            .collect::<std::collections::HashSet<_>>()
+                            .into_iter()
+                            .collect::<Vec<_>>();
+                        families.sort_by_key(|family| {
+                            strsim::damerau_levenshtein(&font_family, &family)
+                        });
+                        families[0..5].join(", ")
+                    }
+                );
+            }
+        };
         let (height, ascender) = context
             .usvg_options
             .fontdb
@@ -55,6 +91,7 @@ impl ComponentRender for Text {
                         fill="{color}"
                         font-size="{font_size}"
                         font-family="{font_family}"
+                        text-anchor="{text_anchor}"
                         {font_weight}
                     >
                         {content}
@@ -69,9 +106,15 @@ impl ComponentRender for Text {
                 .unwrap_or(&context.config.foreground_color.to_string()),
             font_size = font_size,
             font_family = font_family,
+            text_anchor = match self.text_align {
+                TextAlign::Left => "start",
+                TextAlign::Center => "middle",
+                TextAlign::Right => "end",
+            },
             font_weight = self
                 .font_weight
                 .as_ref()
+                .or(context.config.font_weight.as_ref())
                 .map(|weight| format!(r#"font-weight="{}""#, weight))
                 .unwrap_or_default()
         );

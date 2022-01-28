@@ -26,7 +26,7 @@ impl ComponentSetup for VBox {
 }
 
 impl ComponentRender for VBox {
-    fn render(&mut self, render_context: RenderContext) -> eyre::Result<Node> {
+    fn render(&mut self, context: &RenderContext) -> eyre::Result<Node> {
         let mut last_y_mod = 0.0;
         let mut y = 0.0;
         let mut container_width = 0.0;
@@ -43,7 +43,7 @@ impl ComponentRender for VBox {
                     last_y_mod = 0.0;
                 }
                 Component::Overlap { child } => {
-                    let child_node = child.render(render_context.clone())?;
+                    let child_node = child.render(context)?;
                     let bbox = child_node.calculate_bbox().unwrap();
 
                     nodes.push((y - last_y_mod, child_node));
@@ -54,7 +54,7 @@ impl ComponentRender for VBox {
                     last_y_mod = f64::max(bbox.height(), last_y_mod);
                 }
                 _ => {
-                    let child_node = child.render(render_context.clone())?;
+                    let child_node = child.render(context)?;
                     let bbox = child_node.calculate_bbox().unwrap();
 
                     nodes.push((y, child_node));

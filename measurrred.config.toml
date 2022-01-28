@@ -1,5 +1,5 @@
 foreground-color = "white"
 background-color = "black"
-font-family = "Noto Sans CJK KR Bold"
+font-family = "Inter"
 
 refresh-interval = 1000

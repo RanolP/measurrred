@@ -21,11 +21,11 @@ pub struct Widget {
 }
 
 impl Widget {
-    pub fn new(config: WidgetConfig, components: Component) -> Widget {
+    pub fn new(config: WidgetConfig, component: Component) -> Widget {
         Widget {
             x: config.position.x,
             y: config.position.y,
-            component: components,
+            component,
         }
     }
 
@@ -63,8 +63,8 @@ impl Widget {
             },
         });
 
-        let node = self.component.render(context.clone())?;
-        let bbox = node.calculate_bbox().unwrap();
+        let root = self.component.render(&context)?;
+        let bbox = root.calculate_bbox().unwrap();
 
         let transform = Transform::from_translate(
             self.x
@@ -77,7 +77,7 @@ impl Widget {
 
         render_node(
             &tree,
-            &node,
+            &root,
             FitTo::Original,
             transform.clone(),
             target.as_mut(),

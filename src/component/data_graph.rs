@@ -1,7 +1,7 @@
-use std::{collections::LinkedList, rc::Rc, str::FromStr};
+use std::{collections::LinkedList, rc::Rc};
 
 use serde::Deserialize;
-use tracing_unwrap::{OptionExt, ResultExt};
+use tracing_unwrap::OptionExt;
 use usvg::{
     Fill, Group, Node, NodeKind, Opacity, Paint, Path, PathData, Rect, Stroke, StrokeWidth,
 };
@@ -69,7 +69,7 @@ impl ComponentSetup for DataGraph {
 }
 
 impl ComponentRender for DataGraph {
-    fn render(&mut self, context: RenderContext) -> eyre::Result<usvg::Node> {
+    fn render(&mut self, _context: &RenderContext) -> eyre::Result<usvg::Node> {
         let handle = self.handle.as_ref().unwrap();
         let data = handle.read_float(false)?;
         self.samples.pop_front();
@@ -78,7 +78,6 @@ impl ComponentRender for DataGraph {
         let mut line = PathData::new();
         let mut fill = PathData::new();
         let mut first_point = None;
-        let mut last_point = None;
 
         for (i, sample) in self.samples.iter().enumerate() {
             if sample.is_nan() {
@@ -97,14 +96,10 @@ impl ComponentRender for DataGraph {
                 line.push_line_to(x, y);
                 fill.push_line_to(x, y);
             }
-
-            last_point = Some((x, y));
         }
 
-        if let Some((x, y)) = last_point {
-            fill.push_line_to(self.width, self.height);
-        }
-        if let Some((x, y)) = first_point {
+        fill.push_line_to(self.width, self.height);
+        if let Some((x, _)) = first_point {
             fill.push_line_to(x, self.height);
         }
 

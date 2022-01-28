@@ -5,7 +5,7 @@ use crate::{
     data_source::{DataFormat, DataHandle},
 };
 
-use super::{ComponentRender, ComponentSetup, RenderContext, SetupContext};
+use super::{text::TextAlign, ComponentRender, ComponentSetup, RenderContext, SetupContext};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -14,6 +14,8 @@ pub struct DataText {
     font_size: Option<f64>,
     font_family: Option<String>,
     font_weight: Option<String>,
+    #[serde(default)]
+    text_align: TextAlign,
 
     precision: Option<usize>,
     divide_by: Option<f64>,
@@ -46,7 +48,7 @@ impl ComponentSetup for DataText {
 }
 
 impl ComponentRender for DataText {
-    fn render(&mut self, context: RenderContext) -> eyre::Result<usvg::Node> {
+    fn render(&mut self, context: &RenderContext) -> eyre::Result<usvg::Node> {
         let divide_by = self.divide_by.unwrap_or(1.0);
         let handle = self.handle.as_ref().unwrap();
         let content = match self.output_format {
@@ -65,6 +67,7 @@ impl ComponentRender for DataText {
             font_size: self.font_size.clone(),
             font_family: self.font_family.clone(),
             font_weight: self.font_weight.clone(),
+            text_align: self.text_align.clone(),
             content,
         };
         text.render(context)

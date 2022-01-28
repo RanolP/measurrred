@@ -11,6 +11,7 @@ pub struct MeasurrredConfig {
     pub foreground_color: Color,
     pub background_color: Color,
     pub font_family: String,
+    pub font_weight: Option<String>,
     pub refresh_interval: u64,
 }
 

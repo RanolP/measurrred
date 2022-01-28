@@ -21,6 +21,7 @@ mod data_source;
 mod platform;
 mod system;
 mod widget;
+mod util;
 
 fn main() -> eyre::Result<()> {
     tracing_subscriber::fmt::init();
@@ -76,26 +77,30 @@ fn main() -> eyre::Result<()> {
             .map(|data_source| (data_source.name(), data_source)),
     );
 
-    let mut context = component::SetupContext { data_source };
+    let mut usvg_options = Options::default();
+    usvg_options.fontdb.load_system_fonts();
+
+    if cfg!(target_os = "windows") {
+        let local_appdata = std::env::var("LocalAppdata").unwrap();
+        usvg_options.fontdb.load_fonts_dir(
+            std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"),
+        );
+    }
+    let mut context = component::SetupContext {
+        data_source,
+        usvg_options,
+    };
 
     for widget in widgets.iter_mut() {
         widget.setup(&mut context)?;
     }
 
+    let options = context.usvg_options;
+
     let taskbar = TaskbarHandle::collect()?.remove(0);
     let mut overlay = TaskbarOverlay::new(taskbar)?;
     overlay.accept_config(&config)?;
     overlay.show();
-
-    let mut options = Options::default();
-    options.fontdb.load_system_fonts();
-
-    if cfg!(target_os = "windows") {
-        let local_appdata = std::env::var("LocalAppdata").unwrap();
-        options.fontdb.load_fonts_dir(
-            std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"),
-        );
-    }
 
     info!("Hello, measurrred!");
 

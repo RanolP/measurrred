@@ -26,7 +26,7 @@ impl ComponentSetup for HBox {
 }
 
 impl ComponentRender for HBox {
-    fn render(&mut self, render_context: RenderContext) -> eyre::Result<Node> {
+    fn render(&mut self, context: &RenderContext) -> eyre::Result<Node> {
         let mut last_x_mod = 0.0;
         let mut x = 0.0;
         let mut container_height = 0.0;
@@ -43,7 +43,7 @@ impl ComponentRender for HBox {
                     last_x_mod = 0.0;
                 }
                 Component::Overlap { child } => {
-                    let child_node = child.render(render_context.clone())?;
+                    let child_node = child.render(context)?;
                     let bbox = child_node.calculate_bbox().unwrap();
 
                     nodes.push((x - last_x_mod, child_node));
@@ -54,7 +54,7 @@ impl ComponentRender for HBox {
                     last_x_mod = f64::max(bbox.width(), last_x_mod);
                 }
                 _ => {
-                    let child_node = child.render(render_context.clone())?;
+                    let child_node = child.render(context)?;
                     let bbox = child_node.calculate_bbox().unwrap();
 
                     nodes.push((x, child_node));

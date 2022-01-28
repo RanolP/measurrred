@@ -1,62 +1,119 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hbox>
-    <vbox>
-        <hbox y-align="center">
-            <text color="yellow">CPU</text>
-            <set-position to="42" />
-            <data-text source="pdh" query="\Processor(_Total)\% Processor Time" output-format="float" />
-            <margin size="2" />
-            <text>%</text>
-            <margin size="8" />
-            <data-graph 
-                width="130"
-                height="24"
-                sample-count="20"
+<group>
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Black.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-ExtraBold.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Bold.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-SemiBold.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Medium.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Regular.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Light.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-ExtraLight.otf" />
+    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Thin.otf" />
 
-                min="0"
-                max="100"
+    <import-font url="https://www.nerdfonts.com/assets/fonts/Symbols-2048-em%20Nerd%20Font%20Complete.ttf" />
 
-                stroke-color="red"
-                stroke-width="2"
+    <hbox>
+        <vbox>
+            <hbox y-align="center">
+                <text color="yellow" font-family="Pretendard" font-weight="bolder">CPU</text>
+                <set-position to="42" />
+                <data-text
+                    font-family="Pretendard"
 
-                source="pdh"
-                query="\Processor(_Total)\% Processor Time"
-                input-format="float" 
-            />
-        </hbox>
-        <hbox y-align="center">
-            <text color="yellow">RAM</text>
-            <set-position to="42" />
-            <data-text source="global-memory-status" query="dMemoryLoad" input-format="float" output-format="float" />
-            <margin size="2" />
-            <text>%</text>
-            <margin size="6" />
-            <text>(</text>
-            <data-text source="global-memory-status" query="ullUsedPhys" input-format="i64" output-format="float" divide-by="1073741824" />
-            <margin size="4" />
-            <text>/</text>
-            <margin size="4" />
-            <data-text source="global-memory-status" query="ullTotalPhys" input-format="i64" output-format="float" divide-by="1073741824" />
-            <margin size="4" />
-            <text>GB</text>
-            <text>)</text>
-        </hbox>
-    </vbox>
-    <margin size="16" />
-    <vbox>
-        <hbox y-align="center">
-            <text color="lime" font-family="Iosevka NF" font-weight="900">祝</text>
-            <margin size="8" />
-            <data-text source="pdh" query="\Network Interface(*)\Bytes Sent/sec" input-format="i32" output-format="float" divide-by="128" />
-            <margin size="2" />
-            <text>kbps</text>
-        </hbox>
-        <hbox y-align="center">
-            <text color="lime" font-family="Iosevka NF" font-weight="900"></text>
-            <margin size="8" />
-            <data-text source="pdh" query="\Network Interface(*)\Bytes Received/sec" input-format="i32" output-format="float" divide-by="128" />
-            <margin size="2" />
-            <text>kbps</text>
-        </hbox>
-    </vbox>
-</hbox>
+                    source="pdh"
+                    query="\Processor(_Total)\% Processor Time"
+                    output-format="float"
+                />
+                <margin size="2" />
+                <text font-family="Pretendard">%</text>
+                <margin size="8" />
+                <data-graph 
+                    width="130"
+                    height="24"
+                    sample-count="20"
+
+                    min="0"
+                    max="100"
+
+                    stroke-color="red"
+                    stroke-width="2"
+
+                    source="pdh"
+                    query="\Processor(_Total)\% Processor Time"
+                    input-format="float" 
+                />
+            </hbox>
+            <hbox y-align="center">
+                <text color="yellow" font-family="Pretendard">RAM</text>
+                <set-position to="42" />
+                <data-text
+                    font-family="Pretendard"
+                    source="global-memory-status"
+                    query="dMemoryLoad"
+                    input-format="float"
+                    output-format="float"
+                />
+                <margin size="2" />
+                <text font-family="Pretendard">%</text>
+                <margin size="6" />
+                <text font-family="Pretendard">(</text>
+                <data-text
+                    font-family="Pretendard"
+
+                    source="global-memory-status"
+                    query="ullUsedPhys"
+                    input-format="i64"
+                    output-format="float"
+                    divide-by="1073741824"
+                />
+                <margin size="4" />
+                <text font-family="Pretendard">/</text>
+                <margin size="4" />
+                <data-text
+                    font-family="Pretendard"
+                    
+                    source="global-memory-status"
+                    query="ullTotalPhys"
+                    input-format="i64"
+                    output-format="float"
+                    divide-by="1073741824"
+                />
+                <margin size="4" />
+                <text font-family="Pretendard">GB</text>
+                <text font-family="Pretendard">)</text>
+            </hbox>
+        </vbox>
+        <margin size="16" />
+        <vbox>
+            <hbox y-align="center">
+                <text color="lime" font-family="Symbols Nerd Font" font-weight="900">祝</text>
+                <margin size="8" />
+                <data-text
+                    font-family="Pretendard"
+                    
+                    source="pdh"
+                    query="\Network Interface(*)\Bytes Sent/sec"
+                    input-format="i32"
+                    output-format="float"
+                    divide-by="128"
+                />
+                <margin size="2" />
+                <text font-family="Pretendard">kbps</text>
+            </hbox>
+            <hbox y-align="center">
+                <text color="lime" font-family="Symbols Nerd Font" font-weight="900"></text>
+                <margin size="8" />
+                <data-text
+                    font-family="Pretendard"
+                    source="pdh"
+                    query="\Network Interface(*)\Bytes Received/sec"
+                    input-format="i32"
+                    output-format="float"
+                    divide-by="128"
+                />
+                <margin size="2" />
+                <text font-family="Pretendard">kbps</text>
+            </hbox>
+        </vbox>
+    </hbox>
+</group>
