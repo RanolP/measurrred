@@ -13,10 +13,10 @@ use windows::Win32::{
     },
     System::LibraryLoader::GetModuleHandleW,
     UI::WindowsAndMessaging::{
-        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
+        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW, MoveWindow,
         PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow, TranslateMessage,
-        CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_PAINT, WNDCLASSW,
-        WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
+        CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_DPICHANGED,
+        WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
     },
 };
 
@@ -34,6 +34,7 @@ pub struct TaskbarOverlay {
 }
 
 pub struct ActualTaskbarOverlay {
+    hwnd: HWND,
     target: TaskbarHandle,
     pixmap: Option<Pixmap>,
     background_color: u32,
@@ -52,8 +53,6 @@ impl TaskbarOverlay {
     const CLASS_NAME: PWSTR = PWSTR(TaskbarOverlay::CLASS_NAME_STR.as_ptr() as _);
 
     pub fn new(target: TaskbarHandle) -> Result<Self, TaskbarOverlayError> {
-        let taskbar_rect = target.rect()?;
-
         let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;
 
         let class = WNDCLASSW {
@@ -77,8 +76,8 @@ impl TaskbarOverlay {
                 WS_VISIBLE | WS_CHILD,
                 0,
                 0,
-                taskbar_rect.width(),
-                taskbar_rect.height(),
+                0,
+                0,
                 target.hwnd,
                 HMENU(0),
                 instance,
@@ -88,10 +87,13 @@ impl TaskbarOverlay {
         .ok()?;
 
         let overlay = ActualTaskbarOverlay {
+            hwnd: hwnd.clone(),
             target: target.clone(),
             background_color: 0,
             pixmap: None,
         };
+
+        overlay.update_layout()?;
 
         OVERLAY_INSTANCES
             .write()
@@ -167,6 +169,30 @@ impl TaskbarOverlay {
         }
         Ok(())
     }
+
+    pub fn zoom(&self) -> eyre::Result<f32> {
+        Ok(self.target.monitor().get_dpi()? as f32 / 96.0)
+    }
+}
+
+impl ActualTaskbarOverlay {
+    fn update_layout(&self) -> windows::core::Result<()> {
+        let target_rect = self.target.rect()?;
+        let target_rect_raw = self.target.rect_raw()?;
+        unsafe {
+            MoveWindow(
+                self.hwnd,
+                target_rect.x() - target_rect_raw.x(),
+                target_rect.y() - target_rect_raw.y(),
+                target_rect.width(),
+                target_rect.height(),
+                true,
+            )
+        }
+        .ok()?;
+
+        Ok(())
+    }
 }
 
 unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
@@ -179,6 +205,10 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
 
     // TODO: refactor this
     match msg {
+        WM_DPICHANGED => {
+            overlay.update_layout().unwrap_or_log();
+            LRESULT(0)
+        }
         WM_PAINT => {
             let mut rect = RECT::default();
             GetClientRect(hwnd, &mut rect);

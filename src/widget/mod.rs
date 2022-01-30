@@ -40,6 +40,7 @@ impl Widget {
         config: &MeasurrredConfig,
         options: &Options,
         target: &mut Pixmap,
+        zoom: f32,
     ) -> eyre::Result<()> {
         let viewbox_width = target.width() as f64;
         let viewbox_height = target.height() as f64;
@@ -73,7 +74,8 @@ impl Widget {
             self.y
                 .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
                 as f32,
-        );
+        )
+        .post_scale(zoom, zoom);
 
         render_node(
             &tree,

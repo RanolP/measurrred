@@ -20,8 +20,8 @@ mod config;
 mod data_source;
 mod platform;
 mod system;
-mod widget;
 mod util;
+mod widget;
 
 fn main() -> eyre::Result<()> {
     tracing_subscriber::fmt::init();
@@ -105,6 +105,7 @@ fn main() -> eyre::Result<()> {
     info!("Hello, measurrred!");
 
     let mut overlay_w = overlay.clone();
+    let zoom = overlay_w.zoom()?;
     let handle = thread::spawn(move || loop {
         let taskbar_rect = overlay_w.target.rect().unwrap_or_log();
         let width = taskbar_rect.width();
@@ -120,7 +121,7 @@ fn main() -> eyre::Result<()> {
         );
         for widget in widgets.iter_mut() {
             widget
-                .render(&config, &options, &mut pixmap)
+                .render(&config, &options, &mut pixmap, zoom)
                 .unwrap_or_log();
         }
         overlay_w.accept_pixmap(pixmap).unwrap_or_log();
