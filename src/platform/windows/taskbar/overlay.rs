@@ -20,7 +20,7 @@ use windows::Win32::{
     },
 };
 
-use crate::config::MeasurrredConfig;
+use crate::{config::MeasurrredConfig, platform::dpi::become_dpi_aware};
 
 use super::TaskbarHandle;
 
@@ -53,6 +53,8 @@ impl TaskbarOverlay {
     const CLASS_NAME: PWSTR = PWSTR(TaskbarOverlay::CLASS_NAME_STR.as_ptr() as _);
 
     pub fn new(target: TaskbarHandle) -> Result<Self, TaskbarOverlayError> {
+        become_dpi_aware()?;
+
         let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;
 
         let class = WNDCLASSW {
