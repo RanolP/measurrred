@@ -3,6 +3,7 @@ use std::{collections::HashMap, ptr::null_mut, sync::RwLock};
 use once_cell::sync::Lazy;
 use thiserror::Error;
 use tiny_skia::Pixmap;
+use tracing::info;
 use tracing_unwrap::{OptionExt, ResultExt};
 use windows::Win32::{
     Foundation::{HWND, LPARAM, LRESULT, PWSTR, RECT, WPARAM},
@@ -207,6 +208,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
     // TODO: refactor this
     match msg {
         WM_DPICHANGED => {
+            info!("DPI changed! Updating layout...");
             overlay.update_layout().unwrap_or_log();
             LRESULT(0)
         }
