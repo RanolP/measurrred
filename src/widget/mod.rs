@@ -74,8 +74,7 @@ impl Widget {
             self.y
                 .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
                 as f32,
-        )
-        .post_scale(zoom, zoom);
+        );
 
         render_node(
             &tree,

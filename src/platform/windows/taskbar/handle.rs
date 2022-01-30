@@ -59,28 +59,11 @@ impl TaskbarHandle {
         Ok(found_windows)
     }
 
-    fn evaluate_rect(&self, respect_dpi: bool) -> windows::core::Result<Rect> {
+    pub fn rect(&self) -> windows::core::Result<Rect> {
         let mut result = RECT::default();
         unsafe { GetWindowRect(self.hwnd, &mut result) }.ok()?;
 
-        if respect_dpi {
-            let dpi = self.monitor().get_dpi()?;
-
-            result.left = (result.left as f64 * dpi as f64 / 96.0) as i32;
-            result.right = (result.right as f64 * dpi as f64 / 96.0) as i32;
-            result.top = (result.top as f64 * dpi as f64 / 96.0) as i32;
-            result.bottom = (result.bottom as f64 * dpi as f64 / 96.0) as i32;
-        }
-
         Ok(result.into())
-    }
-
-    pub fn rect(&self) -> windows::core::Result<Rect> {
-        self.evaluate_rect(true)
-    }
-
-    pub fn rect_raw(&self) -> windows::core::Result<Rect> {
-        self.evaluate_rect(false)
     }
 
     pub fn monitor(&self) -> MonitorHandle {

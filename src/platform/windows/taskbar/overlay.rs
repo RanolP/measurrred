@@ -180,12 +180,11 @@ impl TaskbarOverlay {
 impl ActualTaskbarOverlay {
     fn update_layout(&self) -> windows::core::Result<()> {
         let target_rect = self.target.rect()?;
-        let target_rect_raw = self.target.rect_raw()?;
         unsafe {
             MoveWindow(
                 self.hwnd,
-                target_rect.x() - target_rect_raw.x(),
-                target_rect.y() - target_rect_raw.y(),
+                0,
+                0,
                 target_rect.width(),
                 target_rect.height(),
                 true,
