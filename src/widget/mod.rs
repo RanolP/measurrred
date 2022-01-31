@@ -66,6 +66,8 @@ impl Widget {
 
         let root = self.component.render(&context)?;
         let bbox = root.calculate_bbox().unwrap();
+        let actual_width = bbox.width() * zoom as f64;
+        let actual_height = bbox.height() * zoom as f64;
 
         let transform = Transform::from_row(
             zoom,
@@ -73,10 +75,10 @@ impl Widget {
             0.0,
             zoom,
             self.x
-                .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
+                .to_real_position(viewbox_width, viewbox_height, actual_width, actual_height)
                 as f32,
             self.y
-                .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
+                .to_real_position(viewbox_width, viewbox_height, actual_width, actual_height)
                 as f32,
         );
 
