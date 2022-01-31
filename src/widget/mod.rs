@@ -67,15 +67,18 @@ impl Widget {
         let root = self.component.render(&context)?;
         let bbox = root.calculate_bbox().unwrap();
 
-        let transform = Transform::from_translate(
+        let transform = Transform::from_row(
+            zoom,
+            0.0,
+            0.0,
+            zoom,
             self.x
                 .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
                 as f32,
             self.y
                 .to_real_position(viewbox_width, viewbox_height, bbox.width(), bbox.height())
                 as f32,
-        )
-        .post_scale(zoom, zoom);
+        );
 
         render_node(
             &tree,

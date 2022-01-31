@@ -105,7 +105,6 @@ fn main() -> eyre::Result<()> {
     info!("Hello, measurrred!");
 
     let mut overlay_w = overlay.clone();
-    let zoom = overlay_w.zoom()?;
     let handle = thread::spawn(move || loop {
         let taskbar_rect = overlay_w.target.rect().unwrap_or_log();
         let width = taskbar_rect.width();
@@ -119,6 +118,7 @@ fn main() -> eyre::Result<()> {
             Transform::default(),
             None,
         );
+        let zoom = overlay_w.zoom().unwrap_or_log();
         for widget in widgets.iter_mut() {
             widget
                 .render(&config, &options, &mut pixmap, zoom)

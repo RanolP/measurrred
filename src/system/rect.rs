@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Rect {
     x: i32,
     y: i32,
