@@ -29,11 +29,14 @@ impl Default for TextAlign {
 #[serde(rename_all = "kebab-case")]
 pub struct Text {
     pub color: Option<String>,
+
+    #[serde(default)]
+    pub text_align: TextAlign,
+
     pub font_size: Option<f64>,
     pub font_family: Option<String>,
     pub font_weight: Option<String>,
-    #[serde(default)]
-    pub text_align: TextAlign,
+
     #[serde(rename = "$value")]
     pub content: Vec<EitherVariable<String>>,
 }

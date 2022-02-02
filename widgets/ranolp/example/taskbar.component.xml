@@ -26,6 +26,20 @@
         query="dMemoryLoad"
         format="float"
     />
+    <fetch-data 
+        name="ram-use"
+
+        source="global-memory-status"
+        query="ullUsedPhys"
+        format="i64"
+    />
+    <fetch-data 
+        name="ram-total"
+
+        source="global-memory-status"
+        query="ullTotalPhys"
+        format="i64"
+    />
 
     <hbox>
         <vbox>
@@ -38,7 +52,7 @@
                 min="0"
                 max="100"
 
-                stroke-color="red"
+                stroke-color="#e03131"
                 stroke-width="2"
 
                 name="cpu%"
@@ -68,25 +82,42 @@
                 min="0"
                 max="100"
 
-                stroke-color="red"
+                stroke-color="#5c7cfa"
                 stroke-width="2"
 
                 name="ram%"
             />
             <set-position to="0px" />
-            <hbox y-align="center">
-                <margin size="4px" />
-                <text color="yellow" font-family="Pretendard" font-weight="bolder">RAM</text>
-                <set-position to="130px" />
+            <vbox x-align="center">
+                <hbox y-align="center">
+                    <margin size="4px" />
+                    <text color="yellow" font-family="Pretendard" font-weight="bolder">RAM</text>
+                    <set-position to="130px" />
+                    <text
+                        font-family="Pretendard"
+                        text-align="right"
+                        font-size="24"
+                        font-weight="bolder"
+                    >
+                        <variable name="ram%" format="float" />%
+                    </text>
+                </hbox>
                 <text
                     font-family="Pretendard"
-                    text-align="right"
-                    font-size="24"
-                    font-weight="bolder"
+                    font-size="12"
+                    font-weight="normal"
                 >
-                    <variable name="ram%" format="float" />%
+                    <variable name="ram-use" format="float" divide-by="1073741824" />
+                    &#x0020;
+                    &#x0020;
+                    /
+                    &#x0020;
+                    &#x0020;
+                    <variable name="ram-total" format="float" divide-by="1073741824" />
+                    &#x0020;
+                    GB
                 </text>
-            </hbox>
+            </vbox>
         </vbox>
     </hbox>
 </group>

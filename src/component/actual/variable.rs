@@ -3,7 +3,11 @@ use serde::{de::DeserializeOwned, Deserialize};
 use crate::{
     component::RenderContext,
     system::{Data, DataFormat},
+    util::serde::FromStrT,
 };
+// We need FromStrT<T> because of the limitation of serde, we only can receive
+// String-like types via EitherVariable<T>, So we should treat the string to fit
+// our requirements.
 
 #[derive(Deserialize)]
 #[serde(rename = "variable")]
@@ -15,18 +19,18 @@ pub struct Variable {
     suffix: String,
 
     #[serde(default = "default_precision")]
-    precision: usize,
+    precision: FromStrT<usize>,
     #[serde(default = "default_divide_by")]
-    divide_by: f64,
+    divide_by: FromStrT<f64>,
     format: DataFormat,
 }
 
-fn default_precision() -> usize {
-    2
+fn default_precision() -> FromStrT<usize> {
+    FromStrT(2)
 }
 
-fn default_divide_by() -> f64 {
-    1.0
+fn default_divide_by() -> FromStrT<f64> {
+    FromStrT(1.0)
 }
 
 impl Variable {
@@ -40,12 +44,12 @@ impl Variable {
         let content = match self.format {
             DataFormat::String => data.as_string().ok()?.to_string(),
             DataFormat::I32 | DataFormat::I64 | DataFormat::Int => {
-                format!("{}", data.as_int().ok()? / self.divide_by as i64)
+                format!("{}", data.as_int().ok()? / self.divide_by.0 as i64)
             }
             DataFormat::F64 | DataFormat::Float => format!(
                 "{:.precision$}",
-                data.as_float().ok()? / self.divide_by,
-                precision = self.precision,
+                data.as_float().ok()? / self.divide_by.0,
+                precision = self.precision.0,
             ),
             DataFormat::Bool => format!("{}", data.as_bool().ok()?),
         };
