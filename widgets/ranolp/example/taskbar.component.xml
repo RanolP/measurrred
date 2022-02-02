@@ -40,6 +40,20 @@
         query="ullTotalPhys"
         format="i64"
     />
+    <fetch-data
+        name="net-up"
+                    
+        source="pdh"
+        query="\Network Interface(*)\Bytes Sent/sec"
+        format="i32"
+    />
+    <fetch-data
+        name="net-down"
+                    
+        source="pdh"
+        query="\Network Interface(*)\Bytes Received/sec"
+        format="i32"
+    />
 
     <hbox>
         <vbox>
@@ -72,6 +86,7 @@
                 </text>
             </hbox>
         </vbox>
+        <margin size="8px" />
         <vbox>
             <set-position to="30vh" />
             <graph 
@@ -118,6 +133,32 @@
                     GB
                 </text>
             </vbox>
+        </vbox>
+        <margin size="8px" />
+        <vbox>
+            <hbox y-align="center">
+                <text color="yellow" font-family="Symbols Nerd Font" font-weight="900">祝</text>
+                <margin size="6px" />
+                <text
+                    font-family="Pretendard"
+                    font-size="20"
+                    font-weight="bolder"
+                >
+                    <variable name="net-up" format="float" divide-by="128" /> kbps
+                </text>
+            </hbox>
+            <set-position to="50vh" />
+            <hbox y-align="center">
+               <text color="yellow" font-family="Symbols Nerd Font" font-weight="900"></text>
+                <margin size="6px" />
+                <text
+                    font-family="Pretendard"
+                    font-size="20"
+                    font-weight="bolder"
+                >
+                    <variable name="net-down" format="float" divide-by="128" /> kbps
+                </text>
+            </hbox>
         </vbox>
     </hbox>
 </group>

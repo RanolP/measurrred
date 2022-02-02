@@ -4,8 +4,8 @@
 
 - Monitor the System
   - [x] CPU Usage
-  - [x] Network Up/Down
   - [x] RAM Usage
+  - [x] Network Up/Down
 
 - Monitor these stuffs:
   - GPU usage
@@ -15,6 +15,10 @@
   - Weather
   - Disk usage
   - Fan speed
+
+## Motivation
+
+As of Windows 11, Microsoft decided to eliminate the old DeskBand API, so the programs like [BatteryBar](https://batterybarpro.com/) (they decided to use floating window), and [NetSpeedMonitor](https://netspeedmonitor.net/) (I think they aren't maintaining a version for Windows 11) have faced their end of life in DeskBand. By the way, there are some programs that didn't rely on the DeskBand API, like [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor/blob/master/README_en-us.md). But I need something extensible and customizable easily enough like [RainMeter](https://www.rainmeter.net/). So I made this, measurrred, a tiny taskbar integrated system monitor. Keep watch this evolving. Thanks!
 
 ### Features I Want to Implement
 
