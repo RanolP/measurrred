@@ -4,7 +4,7 @@ use url::Url;
 
 use crate::util::http;
 
-use super::{ComponentSetup, SetupContext};
+use crate::component::{ComponentAction, SetupContext};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -12,7 +12,7 @@ pub struct ImportFont {
     url: Url,
 }
 
-impl ComponentSetup for ImportFont {
+impl ComponentAction for ImportFont {
     fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
         info!("Try loading {}...", self.url);
         match self.url.scheme() {

@@ -11,7 +11,9 @@ use windows::Win32::{
     },
 };
 
-use super::{Data, DataFormat, DataHandle, DataSource};
+use crate::system::{Data, DataFormat, DataHandle};
+
+use super::DataSource;
 
 pub struct PdhDataSource {
     query: isize,
@@ -76,11 +78,13 @@ impl DataSource for PdhDataSource {
             let result = unsafe {
                 PdhGetFormattedCounterValue(
                     counter,
-                    match preferred_format {
-                        DataFormat::Boolean => PDH_FMT_LONG,
+                    match &preferred_format {
+                        f @ DataFormat::String | f @ DataFormat::Bool => {
+                            eyre::bail!("Unsupported format: {:?}", f)
+                        }
                         DataFormat::I32 => PDH_FMT_LONG,
                         DataFormat::I64 | DataFormat::Int => PDH_FMT_LARGE,
-                        DataFormat::Float => PDH_FMT_DOUBLE,
+                        DataFormat::F64 | DataFormat::Float => PDH_FMT_DOUBLE,
                     },
                     null_mut(),
                     &mut value,
@@ -101,11 +105,13 @@ impl DataSource for PdhDataSource {
             }
 
             let data = unsafe {
-                match preferred_format {
-                    DataFormat::Boolean => Data::Boolean(value.Anonymous.largeValue != 0),
-                    DataFormat::I32 => Data::Int(value.Anonymous.longValue as _),
-                    DataFormat::I64 | DataFormat::Int => Data::Int(value.Anonymous.largeValue),
-                    DataFormat::Float => Data::Float(value.Anonymous.doubleValue),
+                match &preferred_format {
+                    f @ DataFormat::String | f @ DataFormat::Bool => {
+                        eyre::bail!("Unsupported format: {:?}", f)
+                    }
+                    DataFormat::I32 => Data::I32(value.Anonymous.longValue as _),
+                    DataFormat::I64 | DataFormat::Int => Data::I64(value.Anonymous.largeValue),
+                    DataFormat::F64 | DataFormat::Float => Data::F64(value.Anonymous.doubleValue),
                 }
             };
 

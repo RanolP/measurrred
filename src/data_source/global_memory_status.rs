@@ -2,7 +2,9 @@
 
 use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
 
-use super::{Data, DataFormat, DataHandle, DataSource};
+use crate::system::{Data, DataFormat, DataHandle};
+
+use super::DataSource;
 
 pub struct GlobalMemoryStatusDataSource;
 
@@ -44,10 +46,12 @@ impl DataSource for GlobalMemoryStatusDataSource {
                 _ => eyre::bail!("Unknown query: {}", query),
             };
 
-            let data = match preferred_format {
-                DataFormat::I32 | DataFormat::I64 | DataFormat::Int => Data::Int(result as i64),
-                DataFormat::Float => Data::Float(result),
-                DataFormat::Boolean => Data::Int(result as i64),
+            let data = match &preferred_format {
+                f @ DataFormat::String | f @ DataFormat::Bool => {
+                    eyre::bail!("Unsupported format: {:?}", f)
+                }
+                DataFormat::I32 | DataFormat::I64 | DataFormat::Int => Data::I64(result as i64),
+                DataFormat::F64 | DataFormat::Float => Data::F64(result),
             };
 
             Ok(data)

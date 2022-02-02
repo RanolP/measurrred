@@ -3,27 +3,14 @@ use std::fmt;
 use serde::Deserialize;
 use usvg::{Node, NodeKind};
 
-use self::data_graph::DataGraph;
-use self::data_text::DataText;
-use self::group::Group;
-use self::hbox::HBox;
-use self::import_font::ImportFont;
-use self::text::Text;
-use self::vbox::VBox;
+use crate::system::Length;
 
-pub use self::render::{ComponentRender, RenderContext};
-pub use self::setup::{ComponentSetup, SetupContext};
+use self::actual::*;
 
-mod data_graph;
-mod data_text;
-mod group;
-mod hbox;
-mod import_font;
-mod text;
-mod vbox;
+pub use self::action::{ComponentAction, RenderContext, SetupContext, UpdateContext};
 
-mod render;
-mod setup;
+mod action;
+mod actual;
 
 #[derive(Deserialize)]
 pub enum Component {
@@ -33,10 +20,10 @@ pub enum Component {
     HBox(HBox),
     #[serde(rename = "vbox")]
     VBox(VBox),
-    #[serde(rename = "data-text")]
-    DataText(DataText),
-    #[serde(rename = "data-graph")]
-    DataGraph(DataGraph),
+    #[serde(rename = "fetch-data")]
+    FetchData(FetchData),
+    #[serde(rename = "graph")]
+    Graph(Graph),
     #[serde(rename = "group")]
     Group(Group),
 
@@ -44,9 +31,9 @@ pub enum Component {
     ImportFont(ImportFont),
 
     #[serde(rename = "margin")]
-    Margin { size: f64 },
+    Margin { size: Length },
     #[serde(rename = "set-position")]
-    SetPosition { to: f64 },
+    SetPosition { to: Length },
     #[serde(rename = "overlap")]
     Overlap {
         #[serde(rename = "$value")]
@@ -63,9 +50,9 @@ impl fmt::Debug for Component {
             Self::Text(_) => write!(f, "<text>"),
             Self::HBox(_) => write!(f, "<hbox>"),
             Self::VBox(_) => write!(f, "<vbox>"),
-            Self::DataText(_) => write!(f, "<data-text>"),
-            Self::DataGraph(_) => write!(f, "<data-graph>"),
-            Self::Group(_) => write!(f, "<data-graph>"),
+            Self::FetchData(_) => write!(f, "<fetch-data>"),
+            Self::Graph(_) => write!(f, "<graph>"),
+            Self::Group(_) => write!(f, "<group>"),
             Self::ImportFont(_) => write!(f, "<import-font>"),
             Self::Margin { size } => write!(f, "<margin size={}>", size),
             Self::SetPosition { to } => write!(f, "<set-position to={}>", to),
@@ -75,32 +62,44 @@ impl fmt::Debug for Component {
     }
 }
 
-impl ComponentSetup for Component {
+impl ComponentAction for Component {
     fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
         match self {
-            Component::Text(_) => Ok(()),
+            Component::Text(text) => text.setup(context),
             Component::HBox(hbox) => hbox.setup(context),
             Component::VBox(vbox) => vbox.setup(context),
-            Component::DataText(data_text) => data_text.setup(context),
-            Component::DataGraph(data_graph) => data_graph.setup(context),
+            Component::FetchData(data_text) => data_text.setup(context),
+            Component::Graph(data_graph) => data_graph.setup(context),
             Component::Group(group) => group.setup(context),
             Component::ImportFont(import_font) => import_font.setup(context),
             Component::Overlap { child } => child.setup(context),
-            Component::SetPosition { .. } | Component::Margin { .. } | Component::Ignore => Ok(()),
+            Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => Ok(()),
         }
     }
-}
 
-impl ComponentRender for Component {
+    fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {
+        match self {
+            Component::Text(text) => text.update(context),
+            Component::HBox(hbox) => hbox.update(context),
+            Component::VBox(vbox) => vbox.update(context),
+            Component::FetchData(data_text) => data_text.update(context),
+            Component::Graph(data_graph) => data_graph.update(context),
+            Component::Group(group) => group.update(context),
+            Component::ImportFont(import_font) => import_font.update(context),
+            Component::Overlap { child } => child.update(context),
+            Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => Ok(()),
+        }
+    }
+
     fn render(&mut self, context: &RenderContext) -> eyre::Result<Node> {
         match self {
             Component::Text(text) => text.render(context),
             Component::HBox(hbox) => hbox.render(context),
             Component::VBox(vbox) => vbox.render(context),
-            Component::DataText(data_text) => data_text.render(context),
-            Component::DataGraph(data_graph) => data_graph.render(context),
-            Component::Overlap { child } => child.render(context),
+            Component::FetchData(fetch_data) => fetch_data.render(context),
+            Component::Graph(graph) => graph.render(context),
             Component::Group(group) => group.render(context),
+            Component::Overlap { child } => child.render(context),
 
             Component::ImportFont(_)
             | Component::SetPosition { .. }

@@ -4,6 +4,7 @@ use windows::Win32::{
     UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI},
 };
 
+#[derive(Clone, Debug)]
 pub struct MonitorHandle {
     hmonitor: HMONITOR,
 }

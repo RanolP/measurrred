@@ -15,6 +15,8 @@ use tracing_unwrap::ResultExt;
 use usvg::Options;
 use widget::load_widget;
 
+use crate::component::SetupContext;
+
 mod component;
 mod config;
 mod data_source;
@@ -28,9 +30,19 @@ fn main() -> eyre::Result<()> {
 
     info!("Starting");
 
-    let config = MeasurrredConfig::load()?;
+    let measurrred_config = MeasurrredConfig::load()?;
 
     info!("Config loaded.");
+
+    let data_source_list: Vec<BoxedDataSource> = vec![
+        Box::new(PdhDataSource::new().unwrap_or_log()),
+        Box::new(GlobalMemoryStatusDataSource),
+    ];
+    let data_source = HashMap::from_iter(
+        data_source_list
+            .into_iter()
+            .map(|data_source| (data_source.name(), data_source)),
+    );
 
     info!("Initializing widgets");
     let mut widgets = Vec::new();
@@ -56,7 +68,7 @@ fn main() -> eyre::Result<()> {
             Ok(widget) => widget,
             Err(e) => {
                 error!(
-                    "Skipping directory {} due to an error\n└ {}",
+                    "Skipping directory {} due to an error: {}",
                     directory.to_string_lossy(),
                     e
                 );
@@ -67,16 +79,6 @@ fn main() -> eyre::Result<()> {
         widgets.push(widget);
     }
 
-    let data_source_list: Vec<BoxedDataSource> = vec![
-        Box::new(PdhDataSource::new().unwrap_or_log()),
-        Box::new(GlobalMemoryStatusDataSource),
-    ];
-    let data_source = HashMap::from_iter(
-        data_source_list
-            .into_iter()
-            .map(|data_source| (data_source.name(), data_source)),
-    );
-
     let mut usvg_options = Options::default();
     usvg_options.fontdb.load_system_fonts();
 
@@ -86,7 +88,7 @@ fn main() -> eyre::Result<()> {
             std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"),
         );
     }
-    let mut context = component::SetupContext {
+    let mut context = SetupContext {
         data_source,
         usvg_options,
     };
@@ -95,11 +97,14 @@ fn main() -> eyre::Result<()> {
         widget.setup(&mut context)?;
     }
 
-    let options = context.usvg_options;
+    let SetupContext {
+        mut data_source,
+        usvg_options,
+    } = context;
 
     let taskbar = TaskbarHandle::collect()?.remove(0);
     let mut overlay = TaskbarOverlay::new(taskbar)?;
-    overlay.accept_config(&config)?;
+    overlay.accept_config(&measurrred_config)?;
     overlay.show();
 
     info!("Hello, measurrred!");
@@ -111,7 +116,7 @@ fn main() -> eyre::Result<()> {
         let height = taskbar_rect.height();
         let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
         let mut paint = Paint::default();
-        paint.set_color(config.background_color.to_tiny_skia_color());
+        paint.set_color(measurrred_config.background_color.to_tiny_skia_color());
         pixmap.fill_rect(
             Rect::from_xywh(0.0, 0.0, width as f32, height as f32).unwrap(),
             &paint,
@@ -121,15 +126,15 @@ fn main() -> eyre::Result<()> {
         let zoom = overlay_w.zoom().unwrap_or_log();
         for widget in widgets.iter_mut() {
             widget
-                .render(&config, &options, &mut pixmap, zoom)
+                .render(&measurrred_config, &usvg_options, &mut pixmap, zoom)
                 .unwrap_or_log();
         }
         overlay_w.accept_pixmap(pixmap).unwrap_or_log();
         overlay_w.redraw().unwrap_or_log();
-        for data_source in context.data_source.values_mut() {
+        for data_source in data_source.values_mut() {
             data_source.update().unwrap_or_log();
         }
-        thread::sleep(Duration::from_millis(config.refresh_interval));
+        thread::sleep(Duration::from_millis(measurrred_config.refresh_interval));
     });
 
     overlay.begin_event_loop()?;

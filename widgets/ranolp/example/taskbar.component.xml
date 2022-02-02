@@ -12,107 +12,80 @@
 
     <import-font url="https://www.nerdfonts.com/assets/fonts/Symbols-2048-em%20Nerd%20Font%20Complete.ttf" />
 
+    <fetch-data 
+        name="cpu%"
+
+        source="pdh"
+        query="\Processor(_Total)\% Processor Time"
+        format="float"
+    />
+    <fetch-data 
+        name="ram%"
+
+        source="global-memory-status"
+        query="dMemoryLoad"
+        format="float"
+    />
+
     <hbox>
         <vbox>
+            <set-position to="30vh" />
+            <graph 
+                width="130px"
+                height="70vh"
+                sample-count="20"
+
+                min="0"
+                max="100"
+
+                stroke-color="red"
+                stroke-width="2"
+
+                name="cpu%"
+            />
+            <set-position to="0px" />
             <hbox y-align="center">
+                <margin size="4px" />
                 <text color="yellow" font-family="Pretendard" font-weight="bolder">CPU</text>
-                <set-position to="42" />
-                <data-text
+                <set-position to="130px" />
+                <text
                     font-family="Pretendard"
-
-                    source="pdh"
-                    query="\Processor(_Total)\% Processor Time"
-                    output-format="float"
-                />
-                <margin size="2" />
-                <text font-family="Pretendard">%</text>
-                <margin size="8" />
-                <data-graph 
-                    width="130"
-                    height="24"
-                    sample-count="20"
-
-                    min="0"
-                    max="100"
-
-                    stroke-color="red"
-                    stroke-width="2"
-
-                    source="pdh"
-                    query="\Processor(_Total)\% Processor Time"
-                    input-format="float" 
-                />
-            </hbox>
-            <hbox y-align="center">
-                <text color="yellow" font-family="Pretendard">RAM</text>
-                <set-position to="42" />
-                <data-text
-                    font-family="Pretendard"
-                    source="global-memory-status"
-                    query="dMemoryLoad"
-                    input-format="float"
-                    output-format="float"
-                />
-                <margin size="2" />
-                <text font-family="Pretendard">%</text>
-                <margin size="6" />
-                <text font-family="Pretendard">(</text>
-                <data-text
-                    font-family="Pretendard"
-
-                    source="global-memory-status"
-                    query="ullUsedPhys"
-                    input-format="i64"
-                    output-format="float"
-                    divide-by="1073741824"
-                />
-                <margin size="4" />
-                <text font-family="Pretendard">/</text>
-                <margin size="4" />
-                <data-text
-                    font-family="Pretendard"
-                    
-                    source="global-memory-status"
-                    query="ullTotalPhys"
-                    input-format="i64"
-                    output-format="float"
-                    divide-by="1073741824"
-                />
-                <margin size="4" />
-                <text font-family="Pretendard">GB</text>
-                <text font-family="Pretendard">)</text>
+                    text-align="right"
+                    font-size="24"
+                    font-weight="bolder"
+                >
+                    <variable name="cpu%" format="float" />%
+                </text>
             </hbox>
         </vbox>
-        <margin size="16" />
         <vbox>
+            <set-position to="30vh" />
+            <graph 
+                width="130px"
+                height="70vh"
+                sample-count="20"
+
+                min="0"
+                max="100"
+
+                stroke-color="red"
+                stroke-width="2"
+
+                name="ram%"
+            />
+            <set-position to="0px" />
             <hbox y-align="center">
-                <text color="lime" font-family="Symbols Nerd Font" font-weight="900">祝</text>
-                <margin size="8" />
-                <data-text
+                <margin size="4px" />
+                <text color="yellow" font-family="Pretendard" font-weight="bolder">RAM</text>
+                <set-position to="130px" />
+                <text
                     font-family="Pretendard"
-                    
-                    source="pdh"
-                    query="\Network Interface(*)\Bytes Sent/sec"
-                    input-format="i32"
-                    output-format="float"
-                    divide-by="128"
-                />
-                <margin size="2" />
-                <text font-family="Pretendard">kbps</text>
-            </hbox>
-            <hbox y-align="center">
-                <text color="lime" font-family="Symbols Nerd Font" font-weight="900"></text>
-                <margin size="8" />
-                <data-text
-                    font-family="Pretendard"
-                    source="pdh"
-                    query="\Network Interface(*)\Bytes Received/sec"
-                    input-format="i32"
-                    output-format="float"
-                    divide-by="128"
-                />
-                <margin size="2" />
-                <text font-family="Pretendard">kbps</text>
+                    text-align="right"
+                    font-size="24"
+                    font-weight="bolder"
+                >
+                    <variable name="ram%" format="float" />%
+                </text>
             </hbox>
         </vbox>
     </hbox>

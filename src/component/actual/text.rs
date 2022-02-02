@@ -7,7 +7,9 @@ use usvg::{
     Group, Node, NodeExt, NodeKind, Path, PathData, Rect, Tree,
 };
 
-use super::{ComponentRender, RenderContext};
+use crate::component::{ComponentAction, RenderContext};
+
+use super::EitherVariable;
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -33,10 +35,10 @@ pub struct Text {
     #[serde(default)]
     pub text_align: TextAlign,
     #[serde(rename = "$value")]
-    pub content: String,
+    pub content: Vec<EitherVariable<String>>,
 }
 
-impl ComponentRender for Text {
+impl ComponentAction for Text {
     fn render(&mut self, context: &RenderContext) -> eyre::Result<Node> {
         // resvg lacks dominant-baseline support ;(
         let font_size = self.font_size.unwrap_or(16.0);
@@ -99,7 +101,12 @@ impl ComponentRender for Text {
                 </svg>
                 "#,
             dy = ascender,
-            content = self.content,
+            content = self
+                .content
+                .iter()
+                .flat_map(|fragment| fragment.format(context))
+                .collect::<Vec<_>>()
+                .join(""),
             color = self
                 .color
                 .as_ref()
@@ -128,7 +135,17 @@ impl ComponentRender for Text {
 
         let rect = Node::new(NodeKind::Path(Path {
             data: Rc::new(PathData::from_rect(
-                Rect::new(0.0, 0.0, width, height).unwrap_or_log(),
+                Rect::new(
+                    match self.text_align {
+                        TextAlign::Left => 0.0,
+                        TextAlign::Center => -width / 2.0,
+                        TextAlign::Right => -width,
+                    },
+                    0.0,
+                    width,
+                    height,
+                )
+                .unwrap_or_log(),
             )),
             ..Default::default()
         }));

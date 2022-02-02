@@ -3,7 +3,7 @@ use tiny_skia::{Pixmap, Transform};
 use usvg::{Align, AspectRatio, FitTo, NodeExt, Options, Rect, Size, Svg, Tree};
 
 use crate::{
-    component::{Component, ComponentRender, ComponentSetup, RenderContext, SetupContext},
+    component::{Component, ComponentAction, RenderContext, SetupContext, UpdateContext},
     config::MeasurrredConfig,
     system::{HorizontalPosition, VerticalPosition},
 };
@@ -21,7 +21,7 @@ pub struct Widget {
 }
 
 impl Widget {
-    pub fn new(config: WidgetConfig, component: Component) -> Widget {
+    pub fn new(config: WidgetConfig, component: Component) -> Self {
         Widget {
             x: config.position.x,
             y: config.position.y,
@@ -37,7 +37,7 @@ impl Widget {
 
     pub fn render(
         &mut self,
-        config: &MeasurrredConfig,
+        measurred_config: &MeasurrredConfig,
         options: &Options,
         target: &mut Pixmap,
         zoom: f32,
@@ -45,12 +45,11 @@ impl Widget {
         let viewbox_width = target.width() as f64;
         let viewbox_height = target.height() as f64;
 
-        let context = RenderContext {
-            viewbox_width,
-            viewbox_height,
-            usvg_options: options,
-            config,
-        };
+        let mut update_context = UpdateContext::new(measurred_config);
+        self.component.update(&mut update_context)?;
+
+        let render_context = RenderContext::new(target, options, update_context);
+        let root = self.component.render(&render_context)?;
 
         let tree = Tree::create(Svg {
             size: Size::new(viewbox_width, viewbox_height).unwrap(),
@@ -64,7 +63,6 @@ impl Widget {
             },
         });
 
-        let root = self.component.render(&context)?;
         let bbox = root.calculate_bbox().unwrap();
         let actual_width = bbox.width() * zoom as f64;
         let actual_height = bbox.height() * zoom as f64;

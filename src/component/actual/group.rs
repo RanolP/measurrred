@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use usvg::{Node, NodeKind};
 
-use super::{Component, ComponentRender, ComponentSetup, RenderContext, SetupContext};
+use crate::component::{Component, ComponentAction, RenderContext, SetupContext, UpdateContext};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -10,16 +10,21 @@ pub struct Group {
     children: Vec<Component>,
 }
 
-impl ComponentSetup for Group {
+impl ComponentAction for Group {
     fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
         for child in self.children.iter_mut() {
             child.setup(context)?;
         }
         Ok(())
     }
-}
 
-impl ComponentRender for Group {
+    fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {
+        for child in self.children.iter_mut() {
+            child.update(context)?;
+        }
+        Ok(())
+    }
+
     fn render(&mut self, context: &RenderContext) -> eyre::Result<Node> {
         let mut result = Node::new(NodeKind::Group(usvg::Group::default()));
         for child in self.children.iter_mut() {

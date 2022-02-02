@@ -11,6 +11,7 @@ use crate::{platform::monitor::MonitorHandle, system::Rect};
 #[derive(Clone, Debug)]
 pub struct TaskbarHandle {
     pub(super) hwnd: HWND,
+    monitor: MonitorHandle,
 }
 
 impl TaskbarHandle {
@@ -44,7 +45,12 @@ impl TaskbarHandle {
                 let found_windows = (lparam.0 as *mut ResultVec).as_mut().unwrap_or_log();
 
                 if is_taskbar_handle(hwnd) {
-                    found_windows.push(TaskbarHandle { hwnd });
+                    found_windows.push(TaskbarHandle {
+                        hwnd,
+                        // We knew that the taskbar is belong to the monitor.
+                        // It cannot be moved out to other monitors, isn't it?
+                        monitor: MonitorHandle::from_hwnd(hwnd),
+                    });
                 }
 
                 BOOL::from(true)
@@ -66,7 +72,7 @@ impl TaskbarHandle {
         Ok(result.into())
     }
 
-    pub fn monitor(&self) -> MonitorHandle {
-        MonitorHandle::from_hwnd(self.hwnd)
+    pub fn monitor(&self) -> &MonitorHandle {
+        &self.monitor
     }
 }

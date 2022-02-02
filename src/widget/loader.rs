@@ -14,17 +14,17 @@ use super::{Widget, WidgetConfig};
 pub enum WidgetLoadError {
     #[error("I/O failed from {0}")]
     Io(PathBuf, #[source] std::io::Error),
-    #[error("Failed to deserialize {0}")]
+    #[error("Failed to deserialize {0}: {1}")]
     TomlDeserialize(PathBuf, #[source] toml::de::Error),
-    #[error("Failed to deserialize {0}")]
+    #[error("Failed to deserialize {0}: {1}")]
     XmlDeserialize(PathBuf, #[source] quick_xml::DeError),
 }
 
-pub fn load_widget(directory: impl AsRef<Path>) -> Result<Widget, WidgetLoadError> {
+pub fn load_widget<'a>(directory: impl AsRef<Path>) -> Result<Widget, WidgetLoadError> {
     let directory = directory.as_ref();
-    let config = load_widget_config(directory.join("taskbar.config.toml"))?;
+    let widget_config = load_widget_config(directory.join("taskbar.config.toml"))?;
     let component = load_widget_components(directory.join("taskbar.component.xml"))?;
-    Ok(Widget::new(config, component))
+    Ok(Widget::new(widget_config, component))
 }
 
 pub fn load_widget_config(path: PathBuf) -> Result<WidgetConfig, WidgetLoadError> {

@@ -3,66 +3,76 @@ use std::rc::Rc;
 use serde::Deserialize;
 use usvg::{Group, Node, NodeExt, NodeKind, Path, PathData, Rect, Transform};
 
-use crate::system::HorizontalAlignment;
-
-use super::{Component, ComponentRender, ComponentSetup, RenderContext, SetupContext};
+use crate::{
+    component::{Component, ComponentAction, RenderContext, SetupContext, UpdateContext},
+    system::VerticalAlignment,
+};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct VBox {
-    x_align: Option<HorizontalAlignment>,
+pub struct HBox {
+    y_align: Option<VerticalAlignment>,
 
     #[serde(rename = "$value")]
     children: Vec<Component>,
 }
 
-impl ComponentSetup for VBox {
+impl ComponentAction for HBox {
     fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
         for child in self.children.iter_mut() {
             child.setup(context)?;
         }
         Ok(())
     }
-}
 
-impl ComponentRender for VBox {
+    fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {
+        for child in self.children.iter_mut() {
+            child.update(context)?;
+        }
+        Ok(())
+    }
+
     fn render(&mut self, context: &RenderContext) -> eyre::Result<Node> {
-        let mut last_y_mod = 0.0;
-        let mut y = 0.0;
-        let mut container_width = 0.0;
+        let mut last_x_mod = 0.0;
+        let mut x = 0.0;
+        let mut container_height = 0.0;
         let mut nodes = Vec::new();
         let mut result = Node::new(NodeKind::Group(Group::default()));
         for child in self.children.iter_mut() {
             match child {
                 Component::Margin { size } => {
-                    y += *size;
-                    last_y_mod = *size;
+                    let size = size.translate_to_px(context.viewbox_width, context.viewbox_height);
+                    x += size;
+                    last_x_mod = size;
                 }
                 Component::SetPosition { to } => {
-                    y = *to;
-                    last_y_mod = 0.0;
+                    let to = to.translate_to_px(context.viewbox_width, context.viewbox_height);
+                    x = to;
+                    last_x_mod = 0.0;
                 }
                 Component::Overlap { child } => {
                     let child_node = child.render(context)?;
                     let bbox = child_node.calculate_bbox().unwrap();
 
-                    nodes.push((y - last_y_mod, child_node));
+                    nodes.push((x - last_x_mod, child_node));
 
-                    y += f64::max(bbox.height() - last_y_mod, 0.0);
-                    container_width = f64::max(container_width, bbox.width());
+                    x += f64::max(bbox.width() - last_x_mod, 0.0);
+                    container_height = f64::max(container_height, bbox.height());
 
-                    last_y_mod = f64::max(bbox.height(), last_y_mod);
+                    last_x_mod = f64::max(bbox.width(), last_x_mod);
                 }
                 _ => {
                     let child_node = child.render(context)?;
                     let bbox = child_node.calculate_bbox().unwrap();
 
-                    nodes.push((y, child_node));
+                    nodes.push((x, child_node));
 
-                    y += bbox.height();
-                    container_width = f64::max(container_width, bbox.width());
+                    let dx = bbox.right();
 
-                    last_y_mod = bbox.height();
+                    x += dx;
+                    container_height = f64::max(container_height, bbox.height());
+
+                    last_x_mod = dx;
                 }
             }
         }
@@ -70,22 +80,22 @@ impl ComponentRender for VBox {
         result.append(Node::new(NodeKind::Path({
             let mut path = Path::default();
             path.data = Rc::new(PathData::from_rect(
-                Rect::new(0.0, 0.0, container_width, y).unwrap(),
+                Rect::new(0.0, 0.0, x, container_height).unwrap(),
             ));
             path
         })));
 
-        for (y, node) in nodes {
+        for (x, node) in nodes {
             let bbox = node.calculate_bbox().unwrap();
 
             let mut child_transformer = Node::new(NodeKind::Group({
                 let mut group = Group::default();
                 group.transform = Transform::new_translate(
-                    self.x_align
+                    x,
+                    self.y_align
                         .as_ref()
-                        .unwrap_or(&HorizontalAlignment::Left)
-                        .align(container_width, bbox.width()),
-                    y,
+                        .unwrap_or(&VerticalAlignment::Top)
+                        .align(container_height, bbox.height()),
                 );
                 group
             }));
