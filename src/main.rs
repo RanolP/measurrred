@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::{fs, thread};
 
 use config::MeasurrredConfig;
@@ -109,8 +109,13 @@ fn main() -> eyre::Result<()> {
 
     info!("Hello, measurrred!");
 
+    let true_begin = Instant::now();
     let mut overlay_w = overlay.clone();
     let handle = thread::spawn(move || loop {
+        let begin = Instant::now();
+
+        dbg!(true_begin.elapsed().as_millis() as f64 / 1000.0);
+
         let taskbar_rect = overlay_w.target.rect().unwrap_or_log();
         let width = taskbar_rect.width();
         let height = taskbar_rect.height();
@@ -134,7 +139,13 @@ fn main() -> eyre::Result<()> {
         for data_source in data_source.values_mut() {
             data_source.update().unwrap_or_log();
         }
-        thread::sleep(Duration::from_millis(measurrred_config.refresh_interval));
+
+        let delta = begin.elapsed().as_millis() as u64;
+
+        thread::sleep(Duration::from_millis(u64::max(
+            0,
+            measurrred_config.refresh_interval - delta,
+        )));
     });
 
     overlay.begin_event_loop()?;
