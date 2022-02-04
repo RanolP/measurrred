@@ -1,3 +1,4 @@
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Deserialize;
 use usvg::{Node, NodeKind};
 
@@ -11,11 +12,20 @@ pub struct Group {
 }
 
 impl ComponentAction for Group {
-    fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        for child in self.children.iter_mut() {
-            child.setup(context)?;
-        }
-        Ok(())
+    fn setup<'a>(
+        &'a mut self,
+    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>>{
+        let setup_functions = self
+            .children
+            .par_iter_mut()
+            .map(|child| child.setup())
+            .collect::<eyre::Result<Vec<_>>>()?;
+        Ok(Box::new(|context| {
+            for setup in setup_functions {
+                setup(context)?;
+            }
+            Ok(())
+        }))
     }
 
     fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {

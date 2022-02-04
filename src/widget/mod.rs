@@ -30,7 +30,7 @@ impl Widget {
     }
 
     pub fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        self.component.setup(context)?;
+        self.component.setup()?(context)?;
 
         Ok(())
     }

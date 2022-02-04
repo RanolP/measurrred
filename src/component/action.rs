@@ -55,8 +55,10 @@ impl<'a> RenderContext<'a> {
 }
 
 pub trait ComponentAction {
-    fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        Ok(())
+    fn setup<'a>(
+        &'a mut self,
+    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
+        Ok(Box::new(|_| Ok(())))
     }
 
     fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {

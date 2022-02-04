@@ -10,7 +10,11 @@ use data_source::{BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource};
 
 use platform::taskbar::{TaskbarHandle, TaskbarOverlay};
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
+use tracing::log::warn;
+use tracing::metadata::LevelFilter;
 use tracing::{error, info};
+use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
+use tracing_subscriber::{util::SubscriberInitExt, Layer};
 use tracing_unwrap::ResultExt;
 use usvg::Options;
 use widget::load_widget;
@@ -26,7 +30,25 @@ mod util;
 mod widget;
 
 fn main() -> eyre::Result<()> {
-    tracing_subscriber::fmt::init();
+    let my_filter = tracing_subscriber::filter::filter_fn(|metadata| {
+        !matches!(
+            metadata.module_path(),
+            Some("surf::middleware::logger::native")
+        )
+    });
+
+    let file_appender = tracing_appender::rolling::daily("logs", "measurrred");
+    let (file_appender, _guard1) = tracing_appender::non_blocking(file_appender);
+    tracing_subscriber::registry()
+        .with(LevelFilter::INFO)
+        .with(my_filter)
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_ansi(false)
+                .with_writer(file_appender),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     info!("Starting");
 
@@ -109,12 +131,9 @@ fn main() -> eyre::Result<()> {
 
     info!("Hello, measurrred!");
 
-    let true_begin = Instant::now();
     let mut overlay_w = overlay.clone();
     let handle = thread::spawn(move || loop {
         let begin = Instant::now();
-
-        dbg!(true_begin.elapsed().as_millis() as f64 / 1000.0);
 
         let taskbar_rect = overlay_w.target.rect().unwrap_or_log();
         let width = taskbar_rect.width();
@@ -142,10 +161,16 @@ fn main() -> eyre::Result<()> {
 
         let delta = begin.elapsed().as_millis() as u64;
 
-        thread::sleep(Duration::from_millis(u64::max(
-            0,
-            measurrred_config.refresh_interval - delta,
-        )));
+        if delta >= measurrred_config.refresh_interval {
+            warn!(
+                "Rendered in {} ms (>= refresh-interval). Consider higher refresh-interval value.",
+                delta
+            )
+        } else {
+            thread::sleep(Duration::from_millis(
+                measurrred_config.refresh_interval - delta,
+            ));
+        }
     });
 
     overlay.begin_event_loop()?;

@@ -44,9 +44,11 @@ const fn default_fill_opacity() -> f64 {
 }
 
 impl ComponentAction for Graph {
-    fn setup(&mut self, _: &mut SetupContext) -> eyre::Result<()> {
+    fn setup<'a>(
+        &'a mut self,
+    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
         self.samples = LinkedList::from_iter(vec![f64::NAN; self.sample_count].into_iter());
-        Ok(())
+        Ok(Box::new(|_| Ok(())))
     }
 
     fn render(&mut self, context: &RenderContext) -> eyre::Result<usvg::Node> {

@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use tracing::info;
 use url::Url;
+use usvg::fontdb::Source;
 
 use crate::util::http;
 
@@ -13,24 +14,33 @@ pub struct ImportFont {
 }
 
 impl ComponentAction for ImportFont {
-    fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
+    fn setup<'a>(
+        &'a mut self,
+    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
         info!("Try loading {}...", self.url);
         match self.url.scheme() {
             "http" | "https" => {
-                context.usvg_options.fontdb.load_font_data(
-                    http::get(&self.url)
-                        .map_err(|_| eyre::eyre!("Failed to request {}", self.url))?,
-                );
+                let data = http::get(&self.url)
+                    .map_err(|_| eyre::eyre!("Failed to request {}", self.url))?;
+                Ok(Box::new(|context| {
+                    context.usvg_options.fontdb.load_font_data(data);
+                    Ok(())
+                }))
             }
             "file" => {
-                context.usvg_options.fontdb.load_font_file(
+                let data = std::fs::read(
                     self.url
                         .to_file_path()
                         .map_err(|_| eyre::eyre!("Failed to convert {} into path.", self.url))?,
                 )?;
+
+                Ok(Box::new(|context| {
+                    context.usvg_options.fontdb.load_font_data(data);
+                    info!("Loaded {}!", self.url);
+                    Ok(())
+                }))
             }
             scheme => eyre::bail!("Unsupported url scheme: {}", scheme),
         }
-        Ok(())
     }
 }

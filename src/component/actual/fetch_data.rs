@@ -20,14 +20,18 @@ pub struct FetchData {
 }
 
 impl ComponentAction for FetchData {
-    fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        self.handle = Some(
-            context
-                .find_data_source(&self.source)
-                .ok_or(eyre::eyre!("Unknown data source: {}", &self.source))?
-                .query(self.query.clone(), self.format.clone())?,
-        );
-        Ok(())
+    fn setup<'a>(
+        &'a mut self,
+    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
+        Ok(Box::new(|context| {
+            self.handle = Some(
+                context
+                    .find_data_source(&self.source)
+                    .ok_or(eyre::eyre!("Unknown data source: {}", &self.source))?
+                    .query(self.query.clone(), self.format.clone())?,
+            );
+            Ok(())
+        }))
     }
     fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {
         let data = self.handle.as_ref().unwrap_or_log().read()?;

@@ -63,17 +63,21 @@ impl fmt::Debug for Component {
 }
 
 impl ComponentAction for Component {
-    fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
+    fn setup<'a>(
+        &'a mut self,
+    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
         match self {
-            Component::Text(text) => text.setup(context),
-            Component::HBox(hbox) => hbox.setup(context),
-            Component::VBox(vbox) => vbox.setup(context),
-            Component::FetchData(data_text) => data_text.setup(context),
-            Component::Graph(data_graph) => data_graph.setup(context),
-            Component::Group(group) => group.setup(context),
-            Component::ImportFont(import_font) => import_font.setup(context),
-            Component::Overlap { child } => child.setup(context),
-            Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => Ok(()),
+            Component::Text(text) => text.setup(),
+            Component::HBox(hbox) => hbox.setup(),
+            Component::VBox(vbox) => vbox.setup(),
+            Component::FetchData(data_text) => data_text.setup(),
+            Component::Graph(data_graph) => data_graph.setup(),
+            Component::Group(group) => group.setup(),
+            Component::ImportFont(import_font) => import_font.setup(),
+            Component::Overlap { child } => child.setup(),
+            Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => {
+                Ok(Box::new(|_| Ok(())))
+            }
         }
     }
 

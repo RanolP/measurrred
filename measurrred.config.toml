@@ -2,4 +2,4 @@ foreground-color = "white"
 background-color = "black"
 font-family = "Inter"
 
-refresh-interval = 1000
+refresh-interval = 1500

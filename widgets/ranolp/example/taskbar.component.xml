@@ -56,6 +56,7 @@
     />
 
     <hbox>
+        <margin size="4px" />
         <vbox>
             <set-position to="30vh" />
             <graph 
@@ -73,7 +74,7 @@
             />
             <set-position to="0px" />
             <hbox y-align="center">
-                <margin size="4px" />
+                <margin size="2px" />
                 <text color="yellow" font-family="Pretendard" font-weight="bolder">CPU</text>
                 <set-position to="130px" />
                 <text
@@ -86,7 +87,7 @@
                 </text>
             </hbox>
         </vbox>
-        <margin size="8px" />
+        <margin size="4px" />
         <vbox>
             <set-position to="30vh" />
             <graph 
@@ -105,7 +106,7 @@
             <set-position to="0px" />
             <vbox x-align="center">
                 <hbox y-align="center">
-                    <margin size="4px" />
+                    <margin size="2px" />
                     <text color="yellow" font-family="Pretendard" font-weight="bolder">RAM</text>
                     <set-position to="130px" />
                     <text
