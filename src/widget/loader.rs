@@ -20,11 +20,15 @@ pub enum WidgetLoadError {
     XmlDeserialize(PathBuf, #[source] quick_xml::DeError),
 }
 
-pub fn load_widget<'a>(directory: impl AsRef<Path>) -> Result<Widget, WidgetLoadError> {
+pub fn load_widget<'a>(directory: impl AsRef<Path>) -> Result<Option<Widget>, WidgetLoadError> {
     let directory = directory.as_ref();
     let widget_config = load_widget_config(directory.join("taskbar.config.toml"))?;
     let component = load_widget_components(directory.join("taskbar.component.xml"))?;
-    Ok(Widget::new(widget_config, component))
+    if widget_config.general.enabled {
+        Ok(Some(Widget::new(widget_config, component)))
+    } else {
+        Ok(None)
+    }
 }
 
 pub fn load_widget_config(path: PathBuf) -> Result<WidgetConfig, WidgetLoadError> {

@@ -4,11 +4,22 @@ use crate::system::{HorizontalPosition, VerticalPosition};
 
 #[derive(Serialize, Deserialize)]
 pub struct WidgetConfig {
-    pub position: WidgetPositionConfig,
+    pub general: GeneralSection,
+    pub position: PositionSection,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct WidgetPositionConfig {
+pub struct GeneralSection {
+    #[serde(default = "default_general_enabled")]
+    pub enabled: bool,
+}
+
+fn default_general_enabled() -> bool {
+    true
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PositionSection {
     pub x: HorizontalPosition,
     pub y: VerticalPosition,
 }

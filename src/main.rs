@@ -70,7 +70,11 @@ fn main() -> eyre::Result<()> {
         info!("Visiting directory {}", directory.to_string_lossy());
 
         let widget = match load_widget(&directory) {
-            Ok(widget) => widget,
+            Ok(Some(widget)) => widget,
+            Ok(None) => {
+                warn!("{} is disabled.", directory.to_string_lossy());
+                continue;
+            }
             Err(e) => {
                 error!(
                     "Skipping directory {} due to an error: {}",

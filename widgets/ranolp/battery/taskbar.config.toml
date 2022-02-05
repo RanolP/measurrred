@@ -1,3 +1,6 @@
+[general]
+enabled = true
+
 [position]
 x = "right"
 y = "center"
