@@ -1,10 +1,7 @@
-pub use crate::data_source::{
-    global_memory_status::GlobalMemoryStatusDataSource, pdh::PdhDataSource,
-};
+pub use self::windows::*;
 use crate::system::{DataFormat, DataHandle};
 
-mod global_memory_status;
-mod pdh;
+mod windows;
 
 pub trait DataSource {
     fn name(&self) -> &'static str;

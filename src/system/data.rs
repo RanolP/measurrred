@@ -72,7 +72,7 @@ impl Data {
             }),
             Data::I32(v) => Ok(*v != 0),
             Data::I64(v) => Ok(*v != 0),
-            Data::F64(v) => Ok(v.abs() <= f64::EPSILON),
+            Data::F64(v) => Ok(v.abs() > f64::EPSILON),
             Data::Bool(v) => Ok(*v),
             Data::Unknown => Ok(false),
         }

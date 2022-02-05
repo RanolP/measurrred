@@ -6,6 +6,7 @@ pub use import_font::*;
 pub use text::*;
 pub use variable::*;
 pub use vbox::*;
+pub use r#if::*;
 
 mod fetch_data;
 mod graph;
@@ -15,3 +16,4 @@ mod import_font;
 mod text;
 mod variable;
 mod vbox;
+mod r#if;

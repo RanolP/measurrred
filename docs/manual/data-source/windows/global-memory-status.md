@@ -1,8 +1,8 @@
-# `global-memory-status` Data Source
+# `windows/global-memory-status` Data Source
 
 <small>`#[target_os = "windows"]`</small>
 
-`global-memory-status` data source fetches data using [`GlobalMemoryStatusEx`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex) Function.
+`windows/global-memory-status` data source fetches data using [`GlobalMemoryStatusEx`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex) Function.
 
 It accepts a query matched with the field of [`MEMORYSTATUSEX`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-memorystatusex) struct respectively. And a bit more fields for convenience. See following table for more information.
 

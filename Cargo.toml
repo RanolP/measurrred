@@ -11,16 +11,16 @@ thiserror = "1.0.30"
 
 usvg = "0.20.0"
 resvg = "0.20.0"
-tiny-skia = "0.6.2"
+tiny-skia = "0.6.3"
 ttf-parser = "0.14.0"
 svgtypes = "0.8.0"
 
-serde = { version = "1.0.134", features = ["derive"] }
+serde = { version = "1.0.136", features = ["derive"] }
 quick-xml = { version = "0.22.0", features = ["serialize"] }
 toml = "0.5.8"
 
 tracing = "0.1.29"
-tracing-subscriber = "0.3.6"
+tracing-subscriber = "0.3.7"
 tracing-appender = "0.2.0"
 tracing-unwrap = "0.9.2"
 
@@ -55,8 +55,11 @@ features = [
 
     "Win32_System_Performance",
     "Win32_System_SystemInformation",
-    "Win32_System_Power",
     "Win32_System_Diagnostics_Debug",
+
+    "Foundation",
+    "Devices_Power",
+    "System_Power",
 ]
 
 [target.'cfg(target_os = "windows")'.build-dependencies]

@@ -11,9 +11,10 @@ use windows::Win32::{
     },
 };
 
-use crate::system::{Data, DataFormat, DataHandle};
-
-use super::DataSource;
+use crate::{
+    data_source::DataSource,
+    system::{Data, DataFormat, DataHandle},
+};
 
 pub struct PdhDataSource {
     query: isize,
@@ -40,7 +41,7 @@ impl PdhDataSource {
 
 impl DataSource for PdhDataSource {
     fn name(&self) -> &'static str {
-        "pdh"
+        "windows/pdh"
     }
 
     fn update(&self) -> eyre::Result<()> {

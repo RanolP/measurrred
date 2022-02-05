@@ -81,7 +81,7 @@ impl TaskbarOverlay {
                 0,
                 0,
                 0,
-                target.hwnd,
+                target.hwnd(),
                 HMENU(0),
                 instance,
                 null_mut(),
@@ -112,7 +112,7 @@ impl TaskbarOverlay {
             .map_err(|_| TaskbarOverlayError::MutexLockPoisoned)?;
         let mut actual_self = map.get_mut(&self.hwnd.0).unwrap_or_log();
 
-        actual_self.background_color = config.background_color.to_windows_color();
+        actual_self.background_color = config.general.background_color.to_windows_color();
 
         unsafe {
             SetLayeredWindowAttributes(self.hwnd, actual_self.background_color, 0, LWA_COLORKEY)

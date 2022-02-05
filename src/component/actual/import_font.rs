@@ -1,7 +1,6 @@
 use serde::Deserialize;
 use tracing::info;
 use url::Url;
-use usvg::fontdb::Source;
 
 use crate::util::http;
 

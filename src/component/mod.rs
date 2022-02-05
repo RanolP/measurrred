@@ -30,6 +30,9 @@ pub enum Component {
     #[serde(rename = "import-font")]
     ImportFont(ImportFont),
 
+    #[serde(rename = "if")]
+    If(If),
+
     #[serde(rename = "margin")]
     Margin { size: Length },
     #[serde(rename = "set-position")]
@@ -54,6 +57,7 @@ impl fmt::Debug for Component {
             Self::Graph(_) => write!(f, "<graph>"),
             Self::Group(_) => write!(f, "<group>"),
             Self::ImportFont(_) => write!(f, "<import-font>"),
+            Self::If(_) => write!(f, "<if>"),
             Self::Margin { size } => write!(f, "<margin size={}>", size),
             Self::SetPosition { to } => write!(f, "<set-position to={}>", to),
             Self::Overlap { child } => write!(f, "<overlap>{:?}</overlap>", child),
@@ -74,6 +78,7 @@ impl ComponentAction for Component {
             Component::Graph(data_graph) => data_graph.setup(),
             Component::Group(group) => group.setup(),
             Component::ImportFont(import_font) => import_font.setup(),
+            Component::If(r#if) => r#if.setup(),
             Component::Overlap { child } => child.setup(),
             Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => {
                 Ok(Box::new(|_| Ok(())))
@@ -90,6 +95,7 @@ impl ComponentAction for Component {
             Component::Graph(data_graph) => data_graph.update(context),
             Component::Group(group) => group.update(context),
             Component::ImportFont(import_font) => import_font.update(context),
+            Component::If(r#if) => r#if.update(context),
             Component::Overlap { child } => child.update(context),
             Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => Ok(()),
         }
@@ -103,6 +109,7 @@ impl ComponentAction for Component {
             Component::FetchData(fetch_data) => fetch_data.render(context),
             Component::Graph(graph) => graph.render(context),
             Component::Group(group) => group.render(context),
+            Component::If(r#if) => r#if.render(context),
             Component::Overlap { child } => child.render(context),
 
             Component::ImportFont(_)

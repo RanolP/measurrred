@@ -1,5 +1,10 @@
+[general]
 foreground-color = "white"
 background-color = "black"
 font-family = "Inter"
 
 refresh-interval = 1500
+
+
+[viewbox-tuning]
+respect-tray-area-when-right-align = true

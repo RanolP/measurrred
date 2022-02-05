@@ -48,7 +48,7 @@ impl ComponentAction for Text {
         let font_family = self
             .font_family
             .as_ref()
-            .unwrap_or(&context.config.font_family);
+            .unwrap_or(&context.config.general.font_family);
 
         let font_id = match context.usvg_options.fontdb.query(&Query {
             families: &[Family::Name(font_family)],
@@ -113,7 +113,7 @@ impl ComponentAction for Text {
             color = self
                 .color
                 .as_ref()
-                .unwrap_or(&context.config.foreground_color.to_string()),
+                .unwrap_or(&context.config.general.foreground_color.to_string()),
             font_size = font_size,
             font_family = font_family,
             text_anchor = match self.text_align {
@@ -124,7 +124,7 @@ impl ComponentAction for Text {
             font_weight = self
                 .font_weight
                 .as_ref()
-                .or(context.config.font_weight.as_ref())
+                .or(context.config.general.font_weight.as_ref())
                 .map(|weight| format!(r#"font-weight="{}""#, weight))
                 .unwrap_or_default()
         );

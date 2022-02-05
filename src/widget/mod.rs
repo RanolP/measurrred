@@ -1,11 +1,9 @@
-use resvg::render_node;
-use tiny_skia::{Pixmap, Transform};
-use usvg::{Align, AspectRatio, FitTo, NodeExt, Options, Rect, Size, Svg, Tree};
+use usvg::NodeExt;
 
 use crate::{
     component::{Component, ComponentAction, RenderContext, SetupContext, UpdateContext},
     config::MeasurrredConfig,
-    system::{HorizontalPosition, VerticalPosition},
+    system::{HorizontalPosition, Rect, VerticalPosition},
 };
 
 pub use self::config::WidgetConfig;
@@ -38,26 +36,27 @@ impl Widget {
     pub fn render(
         &mut self,
         measurred_config: &MeasurrredConfig,
-        options: &Options,
-        target: &mut Pixmap,
+        usvg_options: &usvg::Options,
+        target: &mut tiny_skia::Pixmap,
+        viewbox: Rect,
         zoom: f32,
     ) -> eyre::Result<()> {
-        let viewbox_width = target.width() as f64;
-        let viewbox_height = target.height() as f64;
+        let viewbox_width = viewbox.width() as f64;
+        let viewbox_height = viewbox.height() as f64;
 
         let mut update_context = UpdateContext::new(measurred_config);
         self.component.update(&mut update_context)?;
 
-        let render_context = RenderContext::new(target, options, update_context);
+        let render_context = RenderContext::new(target, usvg_options, update_context);
         let root = self.component.render(&render_context)?;
 
-        let tree = Tree::create(Svg {
-            size: Size::new(viewbox_width, viewbox_height).unwrap(),
+        let tree = usvg::Tree::create(usvg::Svg {
+            size: usvg::Size::new(viewbox_width, viewbox_height).unwrap(),
             view_box: usvg::ViewBox {
-                rect: Rect::new(0.0, 0.0, viewbox_width, viewbox_height).unwrap(),
-                aspect: AspectRatio {
+                rect: usvg::Rect::new(0.0, 0.0, viewbox_width, viewbox_height).unwrap(),
+                aspect: usvg::AspectRatio {
                     defer: false,
-                    align: Align::None,
+                    align: usvg::Align::None,
                     slice: false,
                 },
             },
@@ -67,7 +66,7 @@ impl Widget {
         let actual_width = bbox.width() * zoom as f64;
         let actual_height = bbox.height() * zoom as f64;
 
-        let transform = Transform::from_row(
+        let transform = tiny_skia::Transform::from_row(
             zoom,
             0.0,
             0.0,
@@ -80,10 +79,10 @@ impl Widget {
                 as f32,
         );
 
-        render_node(
+        resvg::render_node(
             &tree,
             &root,
-            FitTo::Original,
+            usvg::FitTo::Original,
             transform.clone(),
             target.as_mut(),
         )

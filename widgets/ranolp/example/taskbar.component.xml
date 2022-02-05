@@ -15,42 +15,42 @@
     <fetch-data 
         name="cpu%"
 
-        source="pdh"
+        source="windows/pdh"
         query="\Processor(_Total)\% Processor Time"
         format="float"
     />
     <fetch-data 
         name="ram%"
 
-        source="global-memory-status"
+        source="windows/global-memory-status"
         query="dMemoryLoad"
         format="float"
     />
     <fetch-data 
         name="ram-use"
 
-        source="global-memory-status"
+        source="windows/global-memory-status"
         query="ullUsedPhys"
         format="i64"
     />
     <fetch-data 
         name="ram-total"
 
-        source="global-memory-status"
+        source="windows/global-memory-status"
         query="ullTotalPhys"
         format="i64"
     />
     <fetch-data
         name="net-up"
                     
-        source="pdh"
+        source="windows/pdh"
         query="\Network Interface(*)\Bytes Sent/sec"
         format="i32"
     />
     <fetch-data
         name="net-down"
                     
-        source="pdh"
+        source="windows/pdh"
         query="\Network Interface(*)\Bytes Received/sec"
         format="i32"
     />

@@ -5,50 +5,32 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
 
-use config::MeasurrredConfig;
-use data_source::{BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource};
-
 use platform::taskbar::{TaskbarHandle, TaskbarOverlay};
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
-use tracing::log::warn;
-use tracing::metadata::LevelFilter;
-use tracing::{error, info};
-use tracing_subscriber::prelude::__tracing_subscriber_SubscriberExt;
-use tracing_subscriber::{util::SubscriberInitExt, Layer};
+use tracing::{error, info, warn};
 use tracing_unwrap::ResultExt;
 use usvg::Options;
 use widget::load_widget;
 
-use crate::component::SetupContext;
+use crate::{
+    component::SetupContext,
+    config::MeasurrredConfig,
+    data_source::{
+        BatteryReportDataSource, BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource,
+    },
+};
 
 mod component;
 mod config;
 mod data_source;
+mod log;
 mod platform;
 mod system;
 mod util;
 mod widget;
 
 fn main() -> eyre::Result<()> {
-    let my_filter = tracing_subscriber::filter::filter_fn(|metadata| {
-        !matches!(
-            metadata.module_path(),
-            Some("surf::middleware::logger::native")
-        )
-    });
-
-    let file_appender = tracing_appender::rolling::daily("logs", "measurrred");
-    let (file_appender, _guard1) = tracing_appender::non_blocking(file_appender);
-    tracing_subscriber::registry()
-        .with(LevelFilter::INFO)
-        .with(my_filter)
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_ansi(false)
-                .with_writer(file_appender),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    log::initialize_tracing_logger();
 
     info!("Starting");
 
@@ -59,6 +41,7 @@ fn main() -> eyre::Result<()> {
     let data_source_list: Vec<BoxedDataSource> = vec![
         Box::new(PdhDataSource::new().unwrap_or_log()),
         Box::new(GlobalMemoryStatusDataSource),
+        Box::new(BatteryReportDataSource),
     ];
     let data_source = HashMap::from_iter(
         data_source_list
@@ -140,7 +123,12 @@ fn main() -> eyre::Result<()> {
         let height = taskbar_rect.height();
         let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
         let mut paint = Paint::default();
-        paint.set_color(measurrred_config.background_color.to_tiny_skia_color());
+        paint.set_color(
+            measurrred_config
+                .general
+                .background_color
+                .to_tiny_skia_color(),
+        );
         pixmap.fill_rect(
             Rect::from_xywh(0.0, 0.0, width as f32, height as f32).unwrap(),
             &paint,
@@ -150,7 +138,22 @@ fn main() -> eyre::Result<()> {
         let zoom = overlay_w.zoom().unwrap_or_log();
         for widget in widgets.iter_mut() {
             widget
-                .render(&measurrred_config, &usvg_options, &mut pixmap, zoom)
+                .render(
+                    &measurrred_config,
+                    &usvg_options,
+                    &mut pixmap,
+                    match widget.x {
+                        system::HorizontalPosition::Right(_)
+                            if measurrred_config
+                                .viewbox_tuning
+                                .respect_tray_area_when_right_align =>
+                        {
+                            overlay_w.target.rebar_rect().unwrap_or_log()
+                        }
+                        _ => overlay_w.target.rect().unwrap_or_log(),
+                    },
+                    zoom,
+                )
                 .unwrap_or_log();
         }
         overlay_w.accept_pixmap(pixmap).unwrap_or_log();
@@ -161,14 +164,14 @@ fn main() -> eyre::Result<()> {
 
         let delta = begin.elapsed().as_millis() as u64;
 
-        if delta >= measurrred_config.refresh_interval {
+        if delta >= measurrred_config.general.refresh_interval {
             warn!(
                 "Rendered in {} ms (>= refresh-interval). Consider higher refresh-interval value.",
                 delta
             )
         } else {
             thread::sleep(Duration::from_millis(
-                measurrred_config.refresh_interval - delta,
+                measurrred_config.general.refresh_interval - delta,
             ));
         }
     });

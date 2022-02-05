@@ -8,11 +8,24 @@ use crate::system::Color;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct MeasurrredConfig {
+    pub general: GeneralSection,
+    pub viewbox_tuning: ViewboxTuningSection,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct GeneralSection {
     pub foreground_color: Color,
     pub background_color: Color,
     pub font_family: String,
     pub font_weight: Option<String>,
     pub refresh_interval: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ViewboxTuningSection {
+    pub respect_tray_area_when_right_align: bool,
 }
 
 #[derive(Error, Debug)]
