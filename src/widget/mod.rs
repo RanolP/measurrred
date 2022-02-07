@@ -47,7 +47,12 @@ impl Widget {
         let mut update_context = UpdateContext::new(measurred_config);
         self.component.update(&mut update_context)?;
 
-        let render_context = RenderContext::new(target, usvg_options, update_context);
+        let render_context = RenderContext::new(
+            viewbox_width / zoom as f64,
+            viewbox_height / zoom as f64,
+            usvg_options,
+            update_context,
+        );
         let root = self.component.render(&render_context)?;
 
         let tree = usvg::Tree::create(usvg::Svg {
@@ -63,20 +68,26 @@ impl Widget {
         });
 
         let bbox = root.calculate_bbox().unwrap();
-        let actual_width = bbox.width() * zoom as f64;
-        let actual_height = bbox.height() * zoom as f64;
+        let actual_width = bbox.width();
+        let actual_height = bbox.height();
 
         let transform = tiny_skia::Transform::from_row(
             zoom,
             0.0,
             0.0,
             zoom,
-            self.x
-                .to_real_position(viewbox_width, viewbox_height, actual_width, actual_height)
-                as f32,
-            self.y
-                .to_real_position(viewbox_width, viewbox_height, actual_width, actual_height)
-                as f32,
+            self.x.to_real_position(
+                viewbox_width,
+                viewbox_height,
+                actual_width * zoom as f64,
+                actual_height * zoom as f64,
+            ) as f32,
+            self.y.to_real_position(
+                viewbox_width,
+                viewbox_height,
+                actual_width * zoom as f64,
+                actual_height * zoom as f64,
+            ) as f32,
         );
 
         resvg::render_node(
