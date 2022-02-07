@@ -56,25 +56,27 @@ impl ComponentAction for Text {
         }) {
             Some(font_id) => font_id,
             None => {
-                eyre::bail!(
-                    "Failed to find font {}, you may wanted to use one of these fonts: {}",
-                    &font_family,
-                    {
-                        let mut families = context
-                            .usvg_options
-                            .fontdb
-                            .faces()
-                            .iter()
-                            .map(|face| face.family.clone())
-                            .collect::<std::collections::HashSet<_>>()
-                            .into_iter()
-                            .collect::<Vec<_>>();
-                        families.sort_by_key(|family| {
-                            strsim::damerau_levenshtein(&font_family, &family)
-                        });
-                        families[0..5].join(", ")
+                eyre::bail!("Failed to find font {}{}", &font_family, {
+                    let mut families = context
+                        .usvg_options
+                        .fontdb
+                        .faces()
+                        .iter()
+                        .map(|face| face.family.clone())
+                        .collect::<std::collections::HashSet<_>>()
+                        .into_iter()
+                        .collect::<Vec<_>>();
+                    families
+                        .sort_by_key(|family| strsim::damerau_levenshtein(&font_family, &family));
+                    if families.len() > 0 {
+                        format!(
+                            ", you may wanted to use one of these fonts: {}",
+                            families[0..5].join(", ")
+                        )
+                    } else {
+                        ".".to_string()
                     }
-                );
+                });
             }
         };
         let (height, ascender) = context

@@ -5,9 +5,8 @@ use usvg::{Node, NodeKind};
 
 use crate::system::Length;
 
-use self::actual::*;
-
 pub use self::action::{ComponentAction, RenderContext, SetupContext, UpdateContext};
+pub use self::actual::*;
 
 mod action;
 mod actual;

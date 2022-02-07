@@ -5,14 +5,15 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
 
-use platform::taskbar::{TaskbarHandle, TaskbarOverlay};
+use measurrred::system::HorizontalPosition;
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
 use tracing::{error, info, warn};
 use tracing_unwrap::ResultExt;
 use usvg::Options;
-use widget::load_widget;
 
-use crate::{
+use measurrred::platform::taskbar::{TaskbarHandle, TaskbarOverlay};
+use measurrred::widget::load_widget;
+use measurrred::{
     component::SetupContext,
     config::MeasurrredConfig,
     data_source::{
@@ -20,14 +21,7 @@ use crate::{
     },
 };
 
-mod component;
-mod config;
-mod data_source;
 mod log;
-mod platform;
-mod system;
-mod util;
-mod widget;
 
 fn main() -> eyre::Result<()> {
     log::initialize_tracing_logger();
@@ -147,7 +141,7 @@ fn main() -> eyre::Result<()> {
                     &usvg_options,
                     &mut pixmap,
                     match widget.x {
-                        system::HorizontalPosition::Right(_)
+                        HorizontalPosition::Right(_)
                             if measurrred_config
                                 .viewbox_tuning
                                 .respect_tray_area_when_right_align =>

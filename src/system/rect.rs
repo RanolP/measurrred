@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Rect {
     x: i32,
     y: i32,
@@ -7,6 +7,15 @@ pub struct Rect {
 }
 
 impl Rect {
+    pub fn from_xywh(x: i32, y: i32, width: i32, height: i32) -> Self {
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+
     pub fn x(&self) -> i32 {
         self.x
     }
