@@ -33,3 +33,14 @@ Should be careful when reading this comparison list. I, as a user and a creator 
 ### Cons
 
 - Only support macOS
+
+## [perfmonbar](https://github.com/XhmikosR/perfmonbar)
+
+### Pros
+
+- Free Open Source Software
+- Easily Configurable
+
+### Cons
+
+- Only support Windows
