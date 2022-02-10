@@ -6,15 +6,15 @@
   - [x] CPU Usage
   - [x] RAM Usage
   - [x] Network Up/Down
-
-- Monitor these stuffs:
-  - GPU usage
-  - Power usage trend
-  - Batteries remaining
-  - Core temperature
-  - Weather
-  - Disk usage
-  - Fan speed
+  - [x] Batteries Remaining
+  - [ ] GPU Usage
+  - [ ] Power Usage Trend
+  - [ ] Core Temperature
+  - [ ] Weather
+  - [ ] Disk Usage
+  - [ ] Fan Speed
+- Show In-depth Panel on Click (todo)
+- Fancy Settings UI (todo)
 
 ## Motivation
 
@@ -22,7 +22,6 @@ As of Windows 11, Microsoft decided to eliminate the old DeskBand API, so the pr
 
 ### Features I Want to Implement
 
-- Move center of taskbar a little
 - Alter clock
 - Remove network integrated sound icon or replace that with EarTrumpet's one
 - Applying WinUI?
