@@ -1,3 +1,9 @@
+# Cargo Build Output
 /target
+
+# Personal Stuff
 /.cache
 /logs
+
+# Auto Generated Stuff
+assets/windows/icon/measurrred-logo.ico

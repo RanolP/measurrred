@@ -1,0 +1,46 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#linear-gradient);
+      }
+
+      .cls-2 {
+        fill: url(#linear-gradient-2);
+      }
+
+      .cls-3 {
+        fill: url(#linear-gradient-3);
+      }
+
+      .cls-4 {
+        fill: url(#linear-gradient-4);
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="12" y1="19" x2="12" y2="5" gradientUnits="userSpaceOnUse">
+      <stop offset="0.42" stop-color="#624a7a"/>
+      <stop offset="1" stop-color="#231e29"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-2" x1="12" y1="9" x2="12" y2="19" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d19292"/>
+      <stop offset="1" stop-color="#ed9372"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-3" x1="12" y1="20" x2="12" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d10000"/>
+      <stop offset="1" stop-color="#ed4000"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient-4" x1="2.51" y1="4.03" x2="21.49" y2="19.97" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b8294"/>
+      <stop offset="1" stop-color="#242126"/>
+    </linearGradient>
+  </defs>
+  <title>measurrred-logo</title>
+  <g>
+    <rect class="cls-1" x="3" y="5" width="18" height="14"/>
+    <g>
+      <polygon class="cls-2" points="21 19 3 19 3 11.86 5.25 13.29 7.5 9 9.75 13.29 12 13.29 14.25 16.14 16.5 11.86 18.75 13.29 21 11.86 21 19"/>
+      <path class="cls-3" d="M7.5,9l2.25,4.29H12l2.25,2.85,2.25-4.28,2.25,1.43L21,11.86V19H3V11.86l2.25,1.43L7.5,9m0-1a1,1,0,0,0-.89.54L4.87,11.86,3.54,11A1,1,0,0,0,3,10.86a1,1,0,0,0-1,1V19a1,1,0,0,0,1,1H21a1,1,0,0,0,1-1V11.86a1,1,0,0,0-1-1,1,1,0,0,0-.54.15L18.75,12.1,17,11a1,1,0,0,0-.54-.15,1.15,1.15,0,0,0-.26,0,1,1,0,0,0-.63.5l-1.53,2.92-1.29-1.64a1,1,0,0,0-.79-.38H10.35l-2-3.75A1,1,0,0,0,7.5,8Z"/>
+    </g>
+    <path class="cls-4" d="M21,5V19H3V5H21m0-1H3A1,1,0,0,0,2,5V19a1,1,0,0,0,1,1H21a1,1,0,0,0,1-1V5a1,1,0,0,0-1-1Z"/>
+  </g>
+</svg>
