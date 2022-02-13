@@ -3,7 +3,7 @@
 use std::{collections::HashMap, ptr::null_mut};
 
 use windows::Win32::{
-    Foundation::{GetLastError, PWSTR},
+    Foundation::PWSTR,
     System::Performance::{
         PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
         PDH_CALC_NEGATIVE_DENOMINATOR, PDH_CSTATUS_INVALID_DATA, PDH_FMT_COUNTERVALUE,

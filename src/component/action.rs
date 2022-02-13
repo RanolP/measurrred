@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use tiny_skia::Pixmap;
 use usvg::Options;
 
 use crate::{config::MeasurrredConfig, data_source::BoxedDataSource, system::Data};

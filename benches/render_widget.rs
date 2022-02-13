@@ -1,6 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use measurrred::{
-    component::ComponentAction,
     system::{HorizontalPosition, Length, Rect, VerticalPosition},
     widget::Widget,
 };
@@ -10,7 +9,7 @@ mod mock {
     use std::str::FromStr;
 
     use measurrred::{
-        component::{Component, EitherVariable, RenderContext, SetupContext, Text, UpdateContext},
+        component::{Component, EitherVariable, SetupContext, Text},
         config::{GeneralSection, MeasurrredConfig, ViewboxTuningSection},
         system::Color,
     };

@@ -18,7 +18,7 @@ impl DataSource for GlobalMemoryStatusDataSource {
         Ok(())
     }
 
-    fn query(&mut self, query: String, preferred_format: DataFormat) -> eyre::Result<DataHandle> {
+    fn query(&mut self, query: String, _preferred_format: DataFormat) -> eyre::Result<DataHandle> {
         Ok(DataHandle(Box::new(move || {
             let query: &str = &query;
 
