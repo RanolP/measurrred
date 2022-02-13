@@ -1,5 +1,7 @@
 ![banner](docs/images/banner.png)
 
+> ❗CAUTION: This is an early-stage product. You may end up with inconvenient experience, but please consider reporting your problem on the issue tab in this repository and contribute to the community for better product. We would appreciate your efforts.
+
 ## Features
 
 - Monitor the System
