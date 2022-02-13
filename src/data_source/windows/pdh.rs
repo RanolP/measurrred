@@ -27,9 +27,7 @@ impl PdhDataSource {
 
         let result = unsafe { PdhOpenQueryW(PWSTR(null_mut()), 0, &mut query) };
         if result != 0 {
-            eyre::bail!("Failed to open pdh query: Error Code 0x{:x}", unsafe {
-                GetLastError()
-            });
+            Err(windows::core::Error::from_win32())?;
         }
 
         Ok(PdhDataSource {
