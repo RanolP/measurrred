@@ -85,12 +85,6 @@ fn main() -> eyre::Result<()> {
     let mut usvg_options = Options::default();
     usvg_options.fontdb.load_system_fonts();
 
-    if cfg!(target_os = "windows") {
-        let local_appdata = std::env::var("LocalAppdata").unwrap();
-        usvg_options.fontdb.load_fonts_dir(
-            std::path::PathBuf::from(local_appdata).join("Microsoft/Windows/Fonts"),
-        );
-    }
     let mut context = SetupContext {
         data_source,
         usvg_options,

@@ -939,6 +939,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
+name = "fontconfig-parser"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82cea2adebf32a9b104b8ffb308b5fb3b456f04cc76c294c3c85025c8a5d75f4"
+dependencies = [
+ "roxmltree",
+]
+
+[[package]]
 name = "fontdb"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -947,6 +956,18 @@ dependencies = [
  "log",
  "memmap2",
  "ttf-parser 0.12.3",
+]
+
+[[package]]
+name = "fontdb"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "029fc9730885d89fa728b849a381d0ffa739ff0eacfefed236284cb37852fe24"
+dependencies = [
+ "fontconfig-parser",
+ "log",
+ "memmap2",
+ "ttf-parser 0.14.0",
 ]
 
 [[package]]
@@ -1526,7 +1547,8 @@ dependencies = [
  "once_cell",
  "quick-xml",
  "rayon",
- "resvg",
+ "resvg 0.20.0",
+ "resvg 0.21.0",
  "serde",
  "strsim",
  "surf",
@@ -1540,7 +1562,8 @@ dependencies = [
  "tracing-unwrap",
  "ttf-parser 0.14.0",
  "url",
- "usvg",
+ "usvg 0.20.0",
+ "usvg 0.21.0",
  "windows",
 ]
 
@@ -2054,7 +2077,25 @@ dependencies = [
  "svgfilters",
  "svgtypes",
  "tiny-skia",
- "usvg",
+ "usvg 0.20.0",
+]
+
+[[package]]
+name = "resvg"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32ae009e3d95b5bab561bef4b297ed1d78648b1b7eb880d2ab7f25655997ed9e"
+dependencies = [
+ "gif",
+ "jpeg-decoder 0.2.2",
+ "log",
+ "pico-args",
+ "png",
+ "rgb",
+ "svgfilters",
+ "svgtypes",
+ "tiny-skia",
+ "usvg 0.21.0",
 ]
 
 [[package]]
@@ -2912,7 +2953,7 @@ dependencies = [
  "data-url",
  "flate2",
  "float-cmp",
- "fontdb",
+ "fontdb 0.7.0",
  "kurbo",
  "log",
  "pico-args",
@@ -2923,6 +2964,33 @@ dependencies = [
  "siphasher",
  "svgtypes",
  "ttf-parser 0.12.3",
+ "unicode-bidi",
+ "unicode-script",
+ "unicode-vo",
+ "xmlwriter",
+]
+
+[[package]]
+name = "usvg"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15c9b653e313699155537d7a7a69b96090fe2597e75881c306da7b1d10a8ff2d"
+dependencies = [
+ "base64 0.13.0",
+ "data-url",
+ "flate2",
+ "float-cmp",
+ "fontdb 0.8.0",
+ "kurbo",
+ "log",
+ "pico-args",
+ "rctree",
+ "roxmltree",
+ "rustybuzz",
+ "simplecss",
+ "siphasher",
+ "svgtypes",
+ "ttf-parser 0.14.0",
  "unicode-bidi",
  "unicode-script",
  "unicode-vo",
