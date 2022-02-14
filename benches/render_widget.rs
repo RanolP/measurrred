@@ -7,13 +7,13 @@ use tiny_skia::Pixmap;
 
 mod mock {
     use std::str::FromStr;
-
     use measurrred::{
         component::{Component, EitherVariable, SetupContext, Text},
         config::{GeneralSection, MeasurrredConfig, ViewboxTuningSection},
         system::Color,
     };
     use usvg::Options;
+
     pub fn text() -> Component {
         Component::Text(Text {
             color: None,
