@@ -41,9 +41,6 @@ pub enum Component {
         #[serde(rename = "$value")]
         child: Box<Component>,
     },
-
-    #[serde(other)]
-    Ignore,
 }
 
 impl fmt::Debug for Component {
@@ -60,7 +57,6 @@ impl fmt::Debug for Component {
             Self::Margin { size } => write!(f, "<margin size={}>", size),
             Self::SetPosition { to } => write!(f, "<set-position to={}>", to),
             Self::Overlap { child } => write!(f, "<overlap>{:?}</overlap>", child),
-            Self::Ignore => write!(f, "#Ignored"),
         }
     }
 }
@@ -79,9 +75,7 @@ impl ComponentAction for Component {
             Component::ImportFont(import_font) => import_font.setup(),
             Component::If(r#if) => r#if.setup(),
             Component::Overlap { child } => child.setup(),
-            Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => {
-                Ok(Box::new(|_| Ok(())))
-            }
+            Component::Margin { .. } | Component::SetPosition { .. } => Ok(Box::new(|_| Ok(()))),
         }
     }
 
@@ -96,7 +90,7 @@ impl ComponentAction for Component {
             Component::ImportFont(import_font) => import_font.update(context),
             Component::If(r#if) => r#if.update(context),
             Component::Overlap { child } => child.update(context),
-            Component::Margin { .. } | Component::SetPosition { .. } | Component::Ignore => Ok(()),
+            Component::Margin { .. } | Component::SetPosition { .. } => Ok(()),
         }
     }
 
@@ -111,10 +105,9 @@ impl ComponentAction for Component {
             Component::If(r#if) => r#if.render(context),
             Component::Overlap { child } => child.render(context),
 
-            Component::ImportFont(_)
-            | Component::SetPosition { .. }
-            | Component::Margin { .. }
-            | Component::Ignore => Ok(Node::new(NodeKind::Group(usvg::Group::default()))),
+            Component::ImportFont(_) | Component::SetPosition { .. } | Component::Margin { .. } => {
+                Ok(Node::new(NodeKind::Group(usvg::Group::default())))
+            }
         }
     }
 }
