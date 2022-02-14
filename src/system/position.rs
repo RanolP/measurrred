@@ -58,7 +58,7 @@ impl<'de> Deserialize<'de> for HorizontalPosition {
         match splitted[0] {
             "left" => match splitted.len() {
                 1 => Ok(HorizontalPosition::Left(Length::Pixel(0))),
-                2 => Length::from_str(splitted[1]).map(|len| HorizontalPosition::Left(len)),
+                2 => Length::from_str_serde(splitted[1]).map(|len| HorizontalPosition::Left(len)),
                 _ => err,
             },
             "center" => match splitted.len() {
@@ -67,7 +67,7 @@ impl<'de> Deserialize<'de> for HorizontalPosition {
             },
             "right" => match splitted.len() {
                 1 => Ok(HorizontalPosition::Right(Length::Pixel(0))),
-                2 => Length::from_str(splitted[1]).map(|len| HorizontalPosition::Right(len)),
+                2 => Length::from_str_serde(splitted[1]).map(|len| HorizontalPosition::Right(len)),
                 _ => err,
             },
             _ => err,
@@ -153,7 +153,7 @@ impl<'de> Deserialize<'de> for VerticalPosition {
         match splitted[0] {
             "top" => match splitted.len() {
                 1 => Ok(VerticalPosition::Top(Length::Pixel(0))),
-                2 => Length::from_str(splitted[1]).map(|len| VerticalPosition::Top(len)),
+                2 => Length::from_str_serde(splitted[1]).map(|len| VerticalPosition::Top(len)),
                 _ => err,
             },
             "center" => match splitted.len() {
@@ -162,7 +162,7 @@ impl<'de> Deserialize<'de> for VerticalPosition {
             },
             "bottom" => match splitted.len() {
                 1 => Ok(VerticalPosition::Bottom(Length::Pixel(0))),
-                2 => Length::from_str(splitted[1]).map(|len| VerticalPosition::Bottom(len)),
+                2 => Length::from_str_serde(splitted[1]).map(|len| VerticalPosition::Bottom(len)),
                 _ => err,
             },
             _ => err,

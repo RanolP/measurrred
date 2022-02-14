@@ -1,6 +1,7 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 pub enum Length {
     Pixel(i64),
@@ -8,30 +9,58 @@ pub enum Length {
     ViewboxWidth(f64),
 }
 
-impl Length {
-    pub fn from_str<Err: serde::de::Error>(s: impl AsRef<str>) -> Result<Self, Err> {
-        let s = s.as_ref();
+#[derive(Debug, Error)]
+pub enum LengthParseError {
+    #[error("Cannot parse {src} as {as_type} while parsing {unit} unit")]
+    Parse {
+        src: String,
+        as_type: &'static str,
+        unit: &'static str,
+    },
+    #[error("{src} does not match with any length syntax")]
+    Syntax { src: String },
+}
+
+impl FromStr for Length {
+    type Err = LengthParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.ends_with("px") {
             let s = &s[..s.len() - 2];
-            s.parse().map(|i| Length::Pixel(i)).map_err(|_| {
-                serde::de::Error::custom(format!("Cannot parse {} as i64 while parsing px unit", s))
-            })
+            s.parse()
+                .map(|i| Length::Pixel(i))
+                .map_err(|_| LengthParseError::Parse {
+                    src: s.to_string(),
+                    as_type: "i64",
+                    unit: "px",
+                })
         } else if s.ends_with("vh") {
             let s = &s[..s.len() - 2];
-            s.parse().map(|i| Length::ViewboxHeight(i)).map_err(|_| {
-                serde::de::Error::custom(format!("Cannot parse {} as f64 while parsing vh unit", s))
-            })
+            s.parse()
+                .map(|i| Length::ViewboxHeight(i))
+                .map_err(|_| LengthParseError::Parse {
+                    src: s.to_string(),
+                    as_type: "f64",
+                    unit: "vh",
+                })
         } else if s.ends_with("vw") {
             let s = &s[..s.len() - 2];
-            s.parse().map(|i| Length::ViewboxWidth(i)).map_err(|_| {
-                serde::de::Error::custom(format!("Cannot parse {} as f64 while parsing vw unit", s))
-            })
+            s.parse()
+                .map(|i| Length::ViewboxWidth(i))
+                .map_err(|_| LengthParseError::Parse {
+                    src: s.to_string(),
+                    as_type: "f64",
+                    unit: "vw",
+                })
         } else {
-            Err(serde::de::Error::custom(format!(
-                "{} does not match with length syntax",
-                s
-            )))
+            Err(LengthParseError::Syntax { src: s.to_string() })
         }
+    }
+}
+
+impl Length {
+    pub fn from_str_serde<E: serde::de::Error>(s: impl AsRef<str>) -> Result<Self, E> {
+        Length::from_str(s.as_ref()).map_err(|e| E::custom(e))
     }
 }
 
@@ -60,7 +89,7 @@ impl<'de> Deserialize<'de> for Length {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        Length::from_str(s)
+        Length::from_str_serde(&s)
     }
 }
 
