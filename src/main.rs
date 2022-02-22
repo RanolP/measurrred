@@ -107,30 +107,30 @@ fn main() -> eyre::Result<()> {
     info!("Hello, measurrred!");
 
     let mut overlay_w = overlay.clone();
-    let handle = thread::spawn(move || loop {
-        let begin = Instant::now();
+    let handle = thread::spawn(move || -> eyre::Result<()> {
+        loop {
+            let begin = Instant::now();
 
-        let taskbar_rect = overlay_w.target.rect().unwrap_or_log();
-        let width = taskbar_rect.width();
-        let height = taskbar_rect.height();
-        let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
-        let mut paint = Paint::default();
-        paint.set_color(
-            measurrred_config
-                .general
-                .background_color
-                .to_tiny_skia_color(),
-        );
-        pixmap.fill_rect(
-            Rect::from_xywh(0.0, 0.0, width as f32, height as f32).unwrap(),
-            &paint,
-            Transform::default(),
-            None,
-        );
-        let zoom = overlay_w.zoom().unwrap_or_log();
-        for widget in widgets.iter_mut() {
-            widget
-                .render(
+            let taskbar_rect = overlay_w.target.rect()?;
+            let width = taskbar_rect.width();
+            let height = taskbar_rect.height();
+            let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
+            let mut paint = Paint::default();
+            paint.set_color(
+                measurrred_config
+                    .general
+                    .background_color
+                    .to_tiny_skia_color(),
+            );
+            pixmap.fill_rect(
+                Rect::from_xywh(0.0, 0.0, width as f32, height as f32).unwrap(),
+                &paint,
+                Transform::default(),
+                None,
+            );
+            let zoom = overlay_w.zoom()?;
+            for widget in widgets.iter_mut() {
+                widget.render(
                     &measurrred_config,
                     &usvg_options,
                     &mut pixmap,
@@ -140,37 +140,41 @@ fn main() -> eyre::Result<()> {
                                 .viewbox_tuning
                                 .respect_tray_area_when_right_align =>
                         {
-                            overlay_w.target.rebar_rect().unwrap_or_log()
+                            overlay_w.target.rebar_rect()?
                         }
-                        _ => overlay_w.target.rect().unwrap_or_log(),
+                        _ => overlay_w.target.rect()?,
                     },
                     zoom,
-                )
-                .unwrap_or_log();
-        }
-        overlay_w.accept_pixmap(pixmap).unwrap_or_log();
-        overlay_w.redraw().unwrap_or_log();
-        for data_source in data_source.values_mut() {
-            data_source.update().unwrap_or_log();
-        }
+                )?;
+            }
+            overlay_w.accept_pixmap(pixmap)?;
+            overlay_w.redraw()?;
+            for data_source in data_source.values_mut() {
+                data_source.update()?;
+            }
 
-        let delta = begin.elapsed().as_millis() as u64;
+            let delta = begin.elapsed().as_millis() as u64;
 
-        if delta >= measurrred_config.general.refresh_interval {
-            warn!(
+            if delta >= measurrred_config.general.refresh_interval {
+                warn!(
                 "Rendered in {} ms (>= refresh-interval). Consider higher refresh-interval value.",
                 delta
             )
-        } else {
-            thread::sleep(Duration::from_millis(
-                measurrred_config.general.refresh_interval - delta,
-            ));
+            } else {
+                thread::sleep(Duration::from_millis(
+                    measurrred_config.general.refresh_interval - delta,
+                ));
+            }
         }
     });
 
     overlay.begin_event_loop()?;
 
-    handle.join().expect("Should join the thread updating");
+    if let Err(e) = handle.join().unwrap() {
+        error!("Got an error while joining updator handle: {}", e);
+    }
+
+    overlay.shutdown()?;
 
     Ok(())
 }

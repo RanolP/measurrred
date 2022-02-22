@@ -21,7 +21,13 @@ use windows::Win32::{
     },
 };
 
-use crate::{config::MeasurrredConfig, platform::dpi::become_dpi_aware};
+use crate::{
+    config::MeasurrredConfig,
+    platform::{
+        dpi::become_dpi_aware,
+        tray::{TrayIcon, TrayIconError},
+    },
+};
 
 use super::TaskbarHandle;
 
@@ -31,7 +37,7 @@ static OVERLAY_INSTANCES: Lazy<RwLock<HashMap<isize, ActualTaskbarOverlay>>> =
 #[derive(Clone)]
 pub struct TaskbarOverlay {
     pub target: TaskbarHandle,
-    hwnd: HWND,
+    pub hwnd: HWND,
 }
 
 pub struct ActualTaskbarOverlay {
@@ -39,6 +45,7 @@ pub struct ActualTaskbarOverlay {
     target: TaskbarHandle,
     pixmap: Option<Pixmap>,
     background_color: u32,
+    tray: TrayIcon,
 }
 
 #[derive(Error, Debug)]
@@ -47,6 +54,8 @@ pub enum TaskbarOverlayError {
     Windows(#[from] windows::core::Error),
     #[error("Mutex lock poisoned")]
     MutexLockPoisoned,
+    #[error("Error from tray icon: {0}")]
+    TrayIcon(#[from] TrayIconError),
 }
 
 impl TaskbarOverlay {
@@ -89,11 +98,15 @@ impl TaskbarOverlay {
         }
         .ok()?;
 
+        let tray = TrayIcon::new(hwnd.clone())?;
+        tray.add()?;
+
         let overlay = ActualTaskbarOverlay {
             hwnd: hwnd.clone(),
             target: target.clone(),
             background_color: 0,
             pixmap: None,
+            tray,
         };
 
         overlay.update_layout()?;
@@ -154,6 +167,10 @@ impl TaskbarOverlay {
         Ok(())
     }
 
+    pub fn is_valid(&self) -> bool {
+        !self.hwnd.is_invalid()
+    }
+
     pub fn begin_event_loop(&self) -> eyre::Result<()> {
         let mut message = MSG::default();
         let mut message_status: i32;
@@ -170,6 +187,16 @@ impl TaskbarOverlay {
                 DispatchMessageW(&mut message);
             }
         }
+        Ok(())
+    }
+
+    pub fn shutdown(&self) -> eyre::Result<()> {
+        let mut map = OVERLAY_INSTANCES
+            .write()
+            .map_err(|_| TaskbarOverlayError::MutexLockPoisoned)?;
+        let actual_self = map.get_mut(&self.hwnd.0).unwrap_or_log();
+        actual_self.tray.remove()?;
+
         Ok(())
     }
 
@@ -204,6 +231,10 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
     } else {
         return DefWindowProcW(hwnd, msg, wparam, lparam);
     };
+
+    if let Some(result) = overlay.tray.handle(hwnd, msg, wparam, lparam) {
+        return result;
+    }
 
     // TODO: refactor this
     match msg {

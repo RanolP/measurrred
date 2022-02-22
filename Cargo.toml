@@ -59,6 +59,8 @@ features = [
     "Foundation",
     "Devices_Power",
     "System_Power",
+
+    "Win32_UI_Shell",
 ]
 
 [dev-dependencies]
