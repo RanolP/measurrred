@@ -1,10 +1,11 @@
-use std::{collections::HashMap, sync::RwLock};
+use std::{collections::HashMap, ptr::null_mut, sync::RwLock};
 
 use once_cell::sync::Lazy;
 use thiserror::Error;
 use tracing_unwrap::ResultExt;
 use windows::Win32::{
-    Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
+    Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, PWSTR, WPARAM},
+    System::LibraryLoader::GetModuleHandleW,
     UI::{
         Shell::{
             Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE,
@@ -35,13 +36,16 @@ pub enum TrayIconError {
     MutexLockPoisoned,
 }
 
+const IDI_TRAYICON: PWSTR = PWSTR(1101 as _);
+
 impl TrayIcon {
     const UID: u32 = 1000;
     const MESSAGE_ID: u32 = WM_USER + 1;
 
     pub fn new(main_window: HWND) -> Result<Self, TrayIconError> {
-        // TODO: Change icon to its own logo
-        let icon = unsafe { LoadIconW(HINSTANCE(0), IDI_APPLICATION) }.ok()?;
+        let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;
+
+        let icon = unsafe { LoadIconW(instance, IDI_TRAYICON) }.ok()?;
 
         let mut tip = [0u16; 128];
 
