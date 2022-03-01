@@ -25,7 +25,7 @@ use crate::{
     config::MeasurrredConfig,
     platform::{
         dpi::become_dpi_aware,
-        tray::{TrayIcon, TrayIconError},
+        tray::{ActualTrayIcon, HandleResult, TrayIcon, TrayIconError},
     },
 };
 
@@ -33,11 +33,14 @@ use super::TaskbarHandle;
 
 static OVERLAY_INSTANCES: Lazy<RwLock<HashMap<isize, ActualTaskbarOverlay>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
+static TRAY_INSTANCES: Lazy<RwLock<HashMap<isize, ActualTrayIcon>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Clone)]
 pub struct TaskbarOverlay {
     pub target: TaskbarHandle,
     pub hwnd: HWND,
+    tray: TrayIcon,
 }
 
 pub struct ActualTaskbarOverlay {
@@ -45,7 +48,6 @@ pub struct ActualTaskbarOverlay {
     target: TaskbarHandle,
     pixmap: Option<Pixmap>,
     background_color: u32,
-    tray: TrayIcon,
 }
 
 #[derive(Error, Debug)]
@@ -98,7 +100,7 @@ impl TaskbarOverlay {
         }
         .ok()?;
 
-        let tray = TrayIcon::new(hwnd.clone())?;
+        let (tray, actual_tray) = TrayIcon::new(hwnd.clone())?;
         tray.add()?;
 
         let overlay = ActualTaskbarOverlay {
@@ -106,7 +108,6 @@ impl TaskbarOverlay {
             target: target.clone(),
             background_color: 0,
             pixmap: None,
-            tray,
         };
 
         overlay.update_layout()?;
@@ -115,8 +116,12 @@ impl TaskbarOverlay {
             .write()
             .map_err(|_| TaskbarOverlayError::MutexLockPoisoned)?
             .insert(hwnd.0, overlay);
+        TRAY_INSTANCES
+            .write()
+            .map_err(|_| TaskbarOverlayError::MutexLockPoisoned)?
+            .insert(hwnd.0, actual_tray);
 
-        Ok(TaskbarOverlay { target, hwnd })
+        Ok(TaskbarOverlay { tray, target, hwnd })
     }
 
     pub fn accept_config(&mut self, config: &MeasurrredConfig) -> Result<(), TaskbarOverlayError> {
@@ -191,16 +196,12 @@ impl TaskbarOverlay {
     }
 
     pub fn shutdown(&self) -> eyre::Result<()> {
-        let mut map = OVERLAY_INSTANCES
-            .write()
-            .map_err(|_| TaskbarOverlayError::MutexLockPoisoned)?;
-        let actual_self = map.get_mut(&self.hwnd.0).unwrap_or_log();
-        actual_self.tray.remove()?;
+        self.tray.remove()?;
 
         Ok(())
     }
 
-    pub fn zoom(&self) -> eyre::Result<f32> {
+    pub fn zoom(&self) -> windows::core::Result<f32> {
         Ok(self.target.monitor().get_dpi()? as f32 / 96.0)
     }
 }
@@ -225,16 +226,40 @@ impl ActualTaskbarOverlay {
 }
 
 unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
-    let map = OVERLAY_INSTANCES.read().unwrap_or_log();
-    let overlay = if let Some(overlay) = map.get(&hwnd.0) {
+    if ActualTrayIcon::can_accept(msg) {
+        let tray_map = TRAY_INSTANCES.read().unwrap_or_log();
+        let tray = if let Some(tray) = tray_map.get(&hwnd.0) {
+            tray
+        } else {
+            return DefWindowProcW(hwnd, msg, wparam, lparam);
+        };
+
+        match tray.handle(hwnd, msg, wparam, lparam) {
+            HandleResult::Ok(result) => return result,
+            HandleResult::MessageMismatch => {}
+            HandleResult::ContextMenuAction => {
+                drop(tray);
+                drop(tray_map);
+
+                let mut tray_map = TRAY_INSTANCES.write().unwrap_or_log();
+                let tray = if let Some(tray) = tray_map.get_mut(&hwnd.0) {
+                    tray
+                } else {
+                    return DefWindowProcW(hwnd, msg, wparam, lparam);
+                };
+                if let Some(result) = tray.handle_context_menu(hwnd, msg, wparam, lparam) {
+                    return result;
+                }
+            }
+        }
+    }
+
+    let overlay_map = OVERLAY_INSTANCES.read().unwrap_or_log();
+    let overlay = if let Some(overlay) = overlay_map.get(&hwnd.0) {
         overlay
     } else {
         return DefWindowProcW(hwnd, msg, wparam, lparam);
     };
-
-    if let Some(result) = overlay.tray.handle(hwnd, msg, wparam, lparam) {
-        return result;
-    }
 
     // TODO: refactor this
     match msg {

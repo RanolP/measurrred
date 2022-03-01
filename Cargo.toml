@@ -61,6 +61,11 @@ features = [
     "System_Power",
 
     "Win32_UI_Shell",
+
+    "Foundation_Collections",
+    "UI_Xaml_Controls",
+    "UI_Core",
+    "UI_Xaml_Hosting",
 ]
 
 [dev-dependencies]

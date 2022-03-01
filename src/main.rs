@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use std::ptr::null_mut;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
 
@@ -20,11 +21,13 @@ use measurrred::{
         BatteryReportDataSource, BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource,
     },
 };
+use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
 
 mod log;
 
 fn main() -> eyre::Result<()> {
     log::initialize_tracing_logger();
+    unsafe { CoInitializeEx(null_mut(), COINIT_MULTITHREADED) }?;
 
     info!("Starting");
 
@@ -171,7 +174,10 @@ fn main() -> eyre::Result<()> {
     overlay.begin_event_loop()?;
 
     if let Err(e) = handle.join().unwrap() {
-        error!("Got an error while joining updator handle: {}", e);
+        info!(
+            "Got an error while joining updator handle but it is normal: {}",
+            e
+        );
     }
 
     overlay.shutdown()?;

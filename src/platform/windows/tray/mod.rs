@@ -1,10 +1,9 @@
-use std::{collections::HashMap, ptr::null_mut, sync::RwLock};
+use std::ptr::null_mut;
 
-use once_cell::sync::Lazy;
 use thiserror::Error;
 use tracing_unwrap::ResultExt;
 use windows::Win32::{
-    Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, PWSTR, WPARAM},
+    Foundation::{HWND, LPARAM, LRESULT, POINT, PWSTR, WPARAM},
     System::LibraryLoader::GetModuleHandleW,
     UI::{
         Shell::{
@@ -12,21 +11,22 @@ use windows::Win32::{
             NOTIFYICONDATAW, NOTIFYICONDATAW_0, NOTIFYICON_VERSION_4,
         },
         WindowsAndMessaging::{
-            DefWindowProcW, DestroyWindow, LoadIconW, PostQuitMessage, IDI_APPLICATION,
-            WM_LBUTTONDBLCLK, WM_RBUTTONDOWN, WM_USER,
+            DefWindowProcW, DestroyWindow, GetCursorPos, LoadIconW, WM_COMMAND, WM_LBUTTONDBLCLK,
+            WM_RBUTTONDOWN, WM_USER,
         },
     },
 };
 
-static OVERLAY_INSTANCES: Lazy<RwLock<HashMap<isize, ActualTrayIcon>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+use crate::platform::contextmenu::ContextMenu;
 
 #[derive(Clone)]
 pub struct TrayIcon {
     data: NOTIFYICONDATAW,
 }
 
-pub struct ActualTrayIcon {}
+pub struct ActualTrayIcon {
+    menu: ContextMenu,
+}
 
 #[derive(Error, Debug)]
 pub enum TrayIconError {
@@ -42,7 +42,7 @@ impl TrayIcon {
     const UID: u32 = 1000;
     const MESSAGE_ID: u32 = WM_USER + 1;
 
-    pub fn new(main_window: HWND) -> Result<Self, TrayIconError> {
+    pub fn new(main_window: HWND) -> Result<(TrayIcon, ActualTrayIcon), TrayIconError> {
         let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;
 
         let icon = unsafe { LoadIconW(instance, IDI_TRAYICON) }.ok()?;
@@ -67,14 +67,26 @@ impl TrayIcon {
         };
         data.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
 
-        let actual = ActualTrayIcon {};
+        let actual = ActualTrayIcon {
+            menu: ContextMenu::new(vec![
+                (
+                    "Settings".to_string(),
+                    Box::new(|| {
+                        dbg!("세팅 열어주세요");
+                        Ok(())
+                    }),
+                ),
+                (
+                    "Quit".to_string(),
+                    Box::new(move || {
+                        dbg!("죽어주세요");
+                        unsafe { DestroyWindow(main_window) }.ok()
+                    }),
+                ),
+            ])?,
+        };
 
-        OVERLAY_INSTANCES
-            .write()
-            .map_err(|_| TrayIconError::MutexLockPoisoned)?
-            .insert(0, actual);
-
-        Ok(TrayIcon { data })
+        Ok((TrayIcon { data }, actual))
     }
 
     pub fn add(&self) -> Result<(), TrayIconError> {
@@ -86,24 +98,57 @@ impl TrayIcon {
         unsafe { Shell_NotifyIconW(NIM_DELETE, &self.data) }.ok()?;
         Ok(())
     }
+}
 
-    pub fn handle(&self, hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> Option<LRESULT> {
-        if msg != TrayIcon::MESSAGE_ID {
-            return None;
+pub enum HandleResult {
+    Ok(LRESULT),
+    MessageMismatch,
+    ContextMenuAction,
+}
+
+impl ActualTrayIcon {
+    pub fn can_accept(msg: u32) -> bool {
+        matches!(msg, TrayIcon::MESSAGE_ID | WM_COMMAND)
+    }
+
+    pub fn handle(&self, hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> HandleResult {
+        match msg {
+            TrayIcon::MESSAGE_ID => (),
+            WM_COMMAND => return HandleResult::ContextMenuAction,
+            _ => return HandleResult::MessageMismatch,
         }
 
         let res = match lparam.0 as u32 {
             WM_RBUTTONDOWN => {
-                dbg!("right button down");
-                // Treat this as a quit
-                unsafe { DestroyWindow(hwnd) }.ok().unwrap_or_log();
+                let mut pos = POINT::default();
+                unsafe { GetCursorPos(&mut pos) }.ok().unwrap();
+
+                self.menu.show(hwnd, pos.x, pos.y).unwrap_or_log();
                 LRESULT(0)
             }
-            WM_LBUTTONDBLCLK => {
-                dbg!("left button double click");
-                LRESULT(0)
-            }
+            WM_LBUTTONDBLCLK => LRESULT(0),
             _ => unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) },
+        };
+
+        HandleResult::Ok(res)
+    }
+
+    pub fn handle_context_menu(
+        &mut self,
+        hwnd: HWND,
+        msg: u32,
+        wparam: WPARAM,
+        lparam: LPARAM,
+    ) -> Option<LRESULT> {
+        if msg != WM_COMMAND {
+            return None;
+        }
+
+        let res = if wparam.0 >= WM_USER as usize {
+            self.menu.handle_message(wparam.0).unwrap_or_log();
+            LRESULT(0)
+        } else {
+            unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
         };
 
         Some(res)
