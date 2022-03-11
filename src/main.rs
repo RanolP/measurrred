@@ -27,7 +27,7 @@ mod log;
 
 fn main() -> eyre::Result<()> {
     log::initialize_tracing_logger();
-    unsafe { CoInitializeEx(null_mut(), COINIT_MULTITHREADED) }?;
+    // unsafe { CoInitializeEx(null_mut(), COINIT_MULTITHREADED) }?;
 
     info!("Starting");
 
