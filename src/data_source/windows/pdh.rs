@@ -2,14 +2,13 @@
 
 use std::{collections::HashMap, ptr::null_mut};
 
-use windows::Win32::{
-    Foundation::PWSTR,
+use windows::{Win32::{
     System::Performance::{
         PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
         PDH_CALC_NEGATIVE_DENOMINATOR, PDH_CSTATUS_INVALID_DATA, PDH_FMT_COUNTERVALUE,
         PDH_FMT_DOUBLE, PDH_FMT_LARGE, PDH_FMT_LONG, PDH_INVALID_DATA, PDH_NO_DATA,
     },
-};
+}, core::PCWSTR};
 
 use crate::{
     data_source::DataSource,
@@ -25,7 +24,7 @@ impl PdhDataSource {
     pub fn new<'a>() -> eyre::Result<PdhDataSource> {
         let mut query = 0;
 
-        let result = unsafe { PdhOpenQueryW(PWSTR(null_mut()), 0, &mut query) };
+        let result = unsafe { PdhOpenQueryW(PCWSTR(null_mut()), 0, &mut query) };
         if result != 0 {
             Err(windows::core::Error::from_win32())?;
         }

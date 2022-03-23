@@ -2,8 +2,8 @@ use std::ptr::null_mut;
 
 use thiserror::Error;
 use tracing_unwrap::ResultExt;
-use windows::Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, POINT, PWSTR, WPARAM},
+use windows::{Win32::{
+    Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM},
     System::LibraryLoader::GetModuleHandleW,
     UI::{
         Shell::{
@@ -15,7 +15,7 @@ use windows::Win32::{
             WM_RBUTTONDOWN, WM_USER,
         },
     },
-};
+}, core::PCWSTR};
 
 use crate::platform::contextmenu::ContextMenu;
 
@@ -36,14 +36,14 @@ pub enum TrayIconError {
     MutexLockPoisoned,
 }
 
-const IDI_TRAYICON: PWSTR = PWSTR(1101 as _);
+const IDI_TRAYICON: PCWSTR = PCWSTR(1101 as _);
 
 impl TrayIcon {
     const UID: u32 = 1000;
     const MESSAGE_ID: u32 = WM_USER + 1;
 
     pub fn new(main_window: HWND) -> Result<(TrayIcon, ActualTrayIcon), TrayIconError> {
-        let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;
+        let instance = unsafe { GetModuleHandleW(PCWSTR(null_mut())) }.ok()?;
 
         let icon = unsafe { LoadIconW(instance, IDI_TRAYICON) }.ok()?;
 

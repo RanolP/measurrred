@@ -5,8 +5,8 @@ use thiserror::Error;
 use tiny_skia::Pixmap;
 use tracing::info;
 use tracing_unwrap::{OptionExt, ResultExt};
-use windows::Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, PWSTR, RECT, WPARAM},
+use windows::{Win32::{
+    Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
     Graphics::Gdi::{
         BeginPaint, BitBlt, CreateBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC,
         DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, HRGN, PAINTSTRUCT,
@@ -19,7 +19,7 @@ use windows::Win32::{
         CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_DPICHANGED,
         WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
     },
-};
+}, core::PCWSTR};
 
 use crate::{
     config::MeasurrredConfig,
@@ -62,12 +62,12 @@ pub enum TaskbarOverlayError {
 
 impl TaskbarOverlay {
     const CLASS_NAME_STR: &'static str = "MeasurredTaskbar";
-    const CLASS_NAME: PWSTR = PWSTR(TaskbarOverlay::CLASS_NAME_STR.as_ptr() as _);
+    const CLASS_NAME: PCWSTR = PCWSTR(TaskbarOverlay::CLASS_NAME_STR.as_ptr() as _);
 
     pub fn new(target: TaskbarHandle) -> Result<Self, TaskbarOverlayError> {
         become_dpi_aware()?;
 
-        let instance = unsafe { GetModuleHandleW(PWSTR(null_mut())) }.ok()?;
+        let instance = unsafe { GetModuleHandleW(PCWSTR(null_mut())) }.ok()?;
 
         let class = WNDCLASSW {
             lpfnWndProc: Some(wndproc),

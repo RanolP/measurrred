@@ -23,6 +23,7 @@ impl ComponentAction for ImportFont {
                     .map_err(|_| eyre::eyre!("Failed to request {}", self.url))?;
                 Ok(Box::new(|context| {
                     context.usvg_options.fontdb.load_font_data(data);
+                    info!("Loaded {}!", self.url);
                     Ok(())
                 }))
             }

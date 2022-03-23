@@ -1,10 +1,10 @@
 use std::{ffi::OsString, os::windows::prelude::OsStringExt, ptr::null_mut};
 
 use tracing_unwrap::OptionExt;
-use windows::Win32::{
-    Foundation::{BOOL, HWND, LPARAM, PWSTR, RECT},
+use windows::{Win32::{
+    Foundation::{BOOL, HWND, LPARAM, RECT},
     UI::WindowsAndMessaging::{EnumWindows, FindWindowExW, GetClassNameW, GetWindowRect},
-};
+}, core::PCWSTR};
 
 use crate::{platform::monitor::MonitorHandle, system::Rect};
 
@@ -29,8 +29,7 @@ impl TaskbarHandle {
                 let len = unsafe {
                     GetClassNameW(
                         hwnd,
-                        PWSTR(name.as_mut_ptr() as _),
-                        CLASS_NAME_LENGTH as i32,
+                        &mut name,
                     ) as usize
                 };
 
@@ -62,7 +61,7 @@ impl TaskbarHandle {
             .into_iter()
             .map(|hwnd| {
                 let rebar_hwnd =
-                    unsafe { FindWindowExW(hwnd, HWND(0), "ReBarWindow32", PWSTR(null_mut())) };
+                    unsafe { FindWindowExW(hwnd, HWND(0), "ReBarWindow32", PCWSTR(null_mut())) };
                 if rebar_hwnd.is_invalid() {
                     Err(windows::core::Error::from_win32())
                 } else {

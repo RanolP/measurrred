@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::collections::HashMap;
 
@@ -103,6 +103,7 @@ fn main() -> eyre::Result<()> {
     } = context;
 
     let taskbar = TaskbarHandle::collect()?.remove(0);
+
     let mut overlay = TaskbarOverlay::new(taskbar)?;
     overlay.accept_config(&measurrred_config)?;
     overlay.show();
