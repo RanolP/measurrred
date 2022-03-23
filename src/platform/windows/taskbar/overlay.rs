@@ -5,21 +5,25 @@ use thiserror::Error;
 use tiny_skia::Pixmap;
 use tracing::info;
 use tracing_unwrap::{OptionExt, ResultExt};
-use windows::{Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
-    Graphics::Gdi::{
-        BeginPaint, BitBlt, CreateBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC,
-        DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, HRGN, PAINTSTRUCT,
-        RDW_INVALIDATE, RDW_UPDATENOW, SRCPAINT, TRANSPARENT,
+use windows::{
+    core::PCWSTR,
+    Win32::{
+        Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
+        Graphics::Gdi::{
+            BeginPaint, BitBlt, CreateBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC,
+            DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, HRGN,
+            PAINTSTRUCT, RDW_INVALIDATE, RDW_UPDATENOW, SRCPAINT, TRANSPARENT,
+        },
+        System::LibraryLoader::GetModuleHandleW,
+        UI::WindowsAndMessaging::{
+            CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
+            MoveWindow, PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow,
+            TranslateMessage, CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW,
+            WM_DESTROY, WM_DPICHANGED, WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST,
+            WS_VISIBLE,
+        },
     },
-    System::LibraryLoader::GetModuleHandleW,
-    UI::WindowsAndMessaging::{
-        CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW, MoveWindow,
-        PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow, TranslateMessage,
-        CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW, WM_DESTROY, WM_DPICHANGED,
-        WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST, WS_VISIBLE,
-    },
-}, core::PCWSTR};
+};
 
 use crate::{
     config::MeasurrredConfig,
@@ -68,6 +72,8 @@ impl TaskbarOverlay {
         become_dpi_aware()?;
 
         let instance = unsafe { GetModuleHandleW(PCWSTR(null_mut())) }.ok()?;
+
+        println!("I don't know why but RegisterClassW makes bug if it was called too fast. So I decided to do I/O operation for delaying RegisterClassW call.");
 
         let class = WNDCLASSW {
             lpfnWndProc: Some(wndproc),
