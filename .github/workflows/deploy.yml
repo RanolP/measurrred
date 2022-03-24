@@ -22,3 +22,13 @@ jobs:
         with:
           command: build
           args: --release
+
+      - name: Copy Built Executable File
+        run: cp target/release/measurrred.exe measurrred.exe
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: measurrred
+          path: |
+            measurrred.exe
+            widgets
