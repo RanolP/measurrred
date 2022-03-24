@@ -1,9 +1,12 @@
 # Cargo Build Output
-/target
+target/
 
 # Personal Stuff
-/.cache
-/logs
+.cache/
+logs/
 
 # Auto Generated Stuff
 assets/windows/icon/measurrred-logo.ico
+
+# Personal Configuration
+.vscode/
