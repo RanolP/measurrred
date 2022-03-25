@@ -2,7 +2,6 @@
 name = "measurrred"
 version = "0.1.0"
 edition = "2021"
-include = ["src/**/*", "LICENSE", "README.md", "assets/*", "build.rs"]
 
 [dependencies]
 once_cell = "1.9.0"
@@ -80,11 +79,6 @@ tiny-skia = "0.6.3"
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 embed-resource = "1.6.5"
-
-[[bench]]
-name = "render_widget"
-harness = false
-
 
 [profile.release]
 panic = "abort"
