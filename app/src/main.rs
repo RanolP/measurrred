@@ -6,15 +6,15 @@ use std::ptr::null_mut;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
 
-use measurrred::system::HorizontalPosition;
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
 use tracing::{error, info, warn};
 use tracing_unwrap::ResultExt;
 use usvg::Options;
 
-use measurrred::platform::taskbar::{TaskbarHandle, TaskbarOverlay};
-use measurrred::widget::load_widget;
-use measurrred::{
+use app::platform::taskbar::{TaskbarHandle, TaskbarOverlay};
+use app::system::HorizontalPosition;
+use app::widget::load_widget;
+use app::{
     component::SetupContext,
     config::MeasurrredConfig,
     data_source::{

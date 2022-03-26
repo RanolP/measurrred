@@ -30,7 +30,7 @@ jobs:
           args: --release
 
       - name: Copy Built Executable File
-        run: cp target/release/measurrred.exe measurrred.exe
+        run: cp target/release/app.exe measurrred.exe
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
@@ -39,3 +39,4 @@ jobs:
           path: |
             measurrred.exe
             widgets
+            measurrred.config.toml
