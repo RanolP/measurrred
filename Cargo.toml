@@ -4,3 +4,6 @@ members = ["app", "assettled", "barious", "knowhw", "manualright", "renderrred"]
 [profile.release]
 panic = "abort"
 lto = true
+
+[profile.dev.package.resvg]
+opt-level = 3
