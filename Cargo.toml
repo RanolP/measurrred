@@ -7,3 +7,9 @@ lto = true
 
 [profile.dev.package.resvg]
 opt-level = 3
+
+[profile.dev.package.usvg]
+opt-level = 3
+
+[profile.dev.package."tiny-skia"]
+opt-level = 3
