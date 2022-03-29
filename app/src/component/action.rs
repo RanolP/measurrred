@@ -2,30 +2,39 @@ use std::collections::HashMap;
 
 use usvg::Options;
 
-use crate::{config::MeasurrredConfig, data_source::BoxedDataSource, system::Data};
+use crate::{
+    config::MeasurrredConfig,
+    system::{Data, DataFormat},
+};
 
 pub struct SetupContext {
-    pub data_source: HashMap<&'static str, BoxedDataSource>,
     pub usvg_options: Options,
+    pub data_queries: Vec<DataQueryVariable>,
+}
+
+pub struct DataQueryVariable {
+    pub name: String,
+    pub source: String,
+    pub query: String,
+    pub format: DataFormat,
 }
 
 impl SetupContext {
-    pub fn find_data_source(&mut self, name: impl AsRef<str>) -> Option<&mut BoxedDataSource> {
-        self.data_source.get_mut(name.as_ref())
+    pub fn new(usvg_options: Options) -> Self {
+        SetupContext {
+            usvg_options,
+            data_queries: Vec::new(),
+        }
     }
 }
 
 pub struct UpdateContext<'a> {
     pub config: &'a MeasurrredConfig,
-    pub variables: HashMap<String, Data>,
 }
 
 impl<'a> UpdateContext<'a> {
     pub fn new(config: &'a MeasurrredConfig) -> Self {
-        UpdateContext {
-            config,
-            variables: HashMap::new(),
-        }
+        UpdateContext { config }
     }
 }
 
@@ -34,7 +43,7 @@ pub struct RenderContext<'a> {
     pub viewbox_height: f64,
     pub usvg_options: &'a Options,
     pub config: &'a MeasurrredConfig,
-    pub variables: HashMap<String, Data>,
+    pub variables: &'a HashMap<String, Data>,
 }
 
 impl<'a> RenderContext<'a> {
@@ -42,14 +51,15 @@ impl<'a> RenderContext<'a> {
         viewbox_width: f64,
         viewbox_height: f64,
         usvg_options: &'a Options,
-        update_context: UpdateContext<'a>,
+        config: &'a MeasurrredConfig,
+        variables: &'a HashMap<String, Data>,
     ) -> Self {
         RenderContext {
             viewbox_width,
             viewbox_height,
             usvg_options,
-            config: update_context.config,
-            variables: update_context.variables,
+            config,
+            variables,
         }
     }
 }

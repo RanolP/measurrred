@@ -40,10 +40,10 @@ fn main() -> eyre::Result<()> {
         Box::new(GlobalMemoryStatusDataSource),
         Box::new(BatteryReportDataSource),
     ];
-    let data_source = HashMap::from_iter(
+    let mut data_source = HashMap::<String, BoxedDataSource>::from_iter(
         data_source_list
             .into_iter()
-            .map(|data_source| (data_source.name(), data_source)),
+            .map(|data_source| (data_source.name().to_string(), data_source)),
     );
 
     info!("Initializing widgets");
@@ -88,17 +88,14 @@ fn main() -> eyre::Result<()> {
     let mut usvg_options = Options::default();
     usvg_options.fontdb.load_system_fonts();
 
-    let mut context = SetupContext {
-        data_source,
-        usvg_options,
-    };
+    let mut context = SetupContext::new(usvg_options);
 
     for widget in widgets.iter_mut() {
         widget.setup(&mut context)?;
     }
 
     let SetupContext {
-        mut data_source,
+        data_queries,
         usvg_options,
     } = context;
 
@@ -114,6 +111,20 @@ fn main() -> eyre::Result<()> {
     let handle = thread::spawn(move || -> eyre::Result<()> {
         loop {
             let begin = Instant::now();
+
+            for data_source in data_source.values_mut() {
+                data_source.update()?;
+            }
+
+            let mut variables = HashMap::new();
+            for query in &data_queries {
+                let data = data_source
+                    .get_mut(&query.source)
+                    .ok_or(eyre::eyre!("Unknown data source: {}", &query.source))
+                    .and_then(|source| source.query(&query.query, &query.format))
+                    .unwrap();
+                variables.insert(query.name.clone(), data);
+            }
 
             let taskbar_rect = overlay_w.target.rect()?;
             let width = taskbar_rect.width();
@@ -149,13 +160,11 @@ fn main() -> eyre::Result<()> {
                         _ => overlay_w.target.rect()?,
                     },
                     zoom,
+                    &variables,
                 )?;
             }
             overlay_w.accept_pixmap(pixmap)?;
             overlay_w.redraw()?;
-            for data_source in data_source.values_mut() {
-                data_source.update()?;
-            }
 
             let delta = begin.elapsed().as_millis() as u64;
 

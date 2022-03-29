@@ -1,5 +1,5 @@
 pub use self::windows::*;
-use crate::system::{DataFormat, DataHandle};
+use crate::system::{Data, DataFormat};
 
 mod windows;
 
@@ -8,7 +8,7 @@ pub trait DataSource {
 
     fn update(&self) -> eyre::Result<()>;
 
-    fn query(&mut self, query: String, preferred_format: DataFormat) -> eyre::Result<DataHandle>;
+    fn query(&mut self, query: &str, preferred_format: &DataFormat) -> eyre::Result<Data>;
 }
 
 pub type BoxedDataSource = Box<dyn DataSource + Send + Sync>;

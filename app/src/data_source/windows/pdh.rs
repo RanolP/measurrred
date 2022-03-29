@@ -2,17 +2,18 @@
 
 use std::{collections::HashMap, ptr::null_mut};
 
-use windows::{Win32::{
-    System::Performance::{
+use windows::{
+    core::PCWSTR,
+    Win32::System::Performance::{
         PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
         PDH_CALC_NEGATIVE_DENOMINATOR, PDH_CSTATUS_INVALID_DATA, PDH_FMT_COUNTERVALUE,
         PDH_FMT_DOUBLE, PDH_FMT_LARGE, PDH_FMT_LONG, PDH_INVALID_DATA, PDH_NO_DATA,
     },
-}, core::PCWSTR};
+};
 
 use crate::{
     data_source::DataSource,
-    system::{Data, DataFormat, DataHandle},
+    system::{Data, DataFormat},
 };
 
 pub struct PdhDataSource {
@@ -55,8 +56,8 @@ impl DataSource for PdhDataSource {
         Ok(())
     }
 
-    fn query(&mut self, query: String, preferred_format: DataFormat) -> eyre::Result<DataHandle> {
-        let counter = if let Some(&counter) = self.counter.get(&query) {
+    fn query(&mut self, query: &str, preferred_format: &DataFormat) -> eyre::Result<Data> {
+        let counter = if let Some(&counter) = self.counter.get(query) {
             counter
         } else {
             let mut counter = 0;
@@ -67,53 +68,51 @@ impl DataSource for PdhDataSource {
                 Err(::windows::core::Error::from_win32())?;
             }
 
-            self.counter.insert(query, counter);
+            self.counter.insert(query.to_string(), counter);
             counter
         };
 
-        Ok(DataHandle(Box::new(move || {
-            let mut value = PDH_FMT_COUNTERVALUE::default();
-            let result = unsafe {
-                PdhGetFormattedCounterValue(
-                    counter,
-                    match &preferred_format {
-                        f @ DataFormat::String | f @ DataFormat::Bool => {
-                            eyre::bail!("Unsupported format: {:?}", f)
-                        }
-                        DataFormat::I32 => PDH_FMT_LONG,
-                        DataFormat::I64 | DataFormat::Int => PDH_FMT_LARGE,
-                        DataFormat::F64 | DataFormat::Float => PDH_FMT_DOUBLE,
-                    },
-                    null_mut(),
-                    &mut value,
-                )
-            };
-            match result {
-                0 => {}
-                PDH_CALC_NEGATIVE_DENOMINATOR
-                | PDH_INVALID_DATA
-                | PDH_NO_DATA
-                | PDH_CSTATUS_INVALID_DATA => {
-                    return Ok(Data::Unknown);
-                }
-                _ => {
-                    println!("{:x}", result);
-                    Err(::windows::core::Error::from_win32())?;
-                }
-            }
-
-            let data = unsafe {
+        let mut value = PDH_FMT_COUNTERVALUE::default();
+        let result = unsafe {
+            PdhGetFormattedCounterValue(
+                counter,
                 match &preferred_format {
                     f @ DataFormat::String | f @ DataFormat::Bool => {
                         eyre::bail!("Unsupported format: {:?}", f)
                     }
-                    DataFormat::I32 => Data::I32(value.Anonymous.longValue as _),
-                    DataFormat::I64 | DataFormat::Int => Data::I64(value.Anonymous.largeValue),
-                    DataFormat::F64 | DataFormat::Float => Data::F64(value.Anonymous.doubleValue),
-                }
-            };
+                    DataFormat::I32 => PDH_FMT_LONG,
+                    DataFormat::I64 | DataFormat::Int => PDH_FMT_LARGE,
+                    DataFormat::F64 | DataFormat::Float => PDH_FMT_DOUBLE,
+                },
+                null_mut(),
+                &mut value,
+            )
+        };
+        match result {
+            0 => {}
+            PDH_CALC_NEGATIVE_DENOMINATOR
+            | PDH_INVALID_DATA
+            | PDH_NO_DATA
+            | PDH_CSTATUS_INVALID_DATA => {
+                return Ok(Data::Unknown);
+            }
+            _ => {
+                println!("{:x}", result);
+                Err(::windows::core::Error::from_win32())?;
+            }
+        }
 
-            Ok(data)
-        })))
+        let data = unsafe {
+            match &preferred_format {
+                f @ DataFormat::String | f @ DataFormat::Bool => {
+                    eyre::bail!("Unsupported format: {:?}", f)
+                }
+                DataFormat::I32 => Data::I32(value.Anonymous.longValue as _),
+                DataFormat::I64 | DataFormat::Int => Data::I64(value.Anonymous.largeValue),
+                DataFormat::F64 | DataFormat::Float => Data::F64(value.Anonymous.doubleValue),
+            }
+        };
+
+        Ok(data)
     }
 }

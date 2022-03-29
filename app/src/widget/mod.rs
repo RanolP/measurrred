@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use usvg::NodeExt;
 
 use crate::{
     component::{Component, ComponentAction, RenderContext, SetupContext, UpdateContext},
     config::MeasurrredConfig,
-    system::{HorizontalPosition, Rect, VerticalPosition},
+    system::{Data, HorizontalPosition, Rect, VerticalPosition},
 };
 
 pub use self::config::WidgetConfig;
@@ -40,6 +42,7 @@ impl Widget {
         target: &mut tiny_skia::Pixmap,
         viewbox: Rect,
         zoom: f32,
+        variables: &HashMap<String, Data>,
     ) -> eyre::Result<()> {
         let viewbox_width = viewbox.width() as f64;
         let viewbox_height = viewbox.height() as f64;
@@ -51,7 +54,8 @@ impl Widget {
             viewbox_width / zoom as f64,
             viewbox_height / zoom as f64,
             usvg_options,
-            update_context,
+            measurred_config,
+            variables,
         );
         let root = self.component.render(&render_context)?;
 
