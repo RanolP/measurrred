@@ -7,5 +7,5 @@ pub trait Knowhw<Query, Answer> {
         Ok(())
     }
 
-    fn query(&mut self, query: Query) -> Result<Answer, Self::Error>;
+    fn query(&mut self, query: &Query) -> Result<Answer, Self::Error>;
 }
