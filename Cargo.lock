@@ -89,6 +89,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "criterion",
+ "declarrred",
  "embed-resource",
  "eyre",
  "futures",
@@ -752,6 +753,10 @@ checksum = "3a30bfce702bcfa94e906ef82421f2c0e61c076ad76030c16ee5d2e9a32fe193"
 dependencies = [
  "matches",
 ]
+
+[[package]]
+name = "declarrred"
+version = "0.1.0"
 
 [[package]]
 name = "deflate"
