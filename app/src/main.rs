@@ -25,9 +25,12 @@ use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
 
 mod log;
 
-fn main() -> eyre::Result<()> {
+#[async_std::main]
+async fn main() -> eyre::Result<()> {
     log::initialize_tracing_logger();
     // unsafe { CoInitializeEx(null_mut(), COINIT_MULTITHREADED) }?;
+
+    let begin = Instant::now();
 
     info!("Starting");
 
@@ -91,7 +94,7 @@ fn main() -> eyre::Result<()> {
     let mut context = SetupContext::new(usvg_options);
 
     for widget in widgets.iter_mut() {
-        widget.setup(&mut context)?;
+        widget.setup(&mut context).await?;
     }
 
     let SetupContext {
@@ -105,7 +108,10 @@ fn main() -> eyre::Result<()> {
     overlay.accept_config(&measurrred_config)?;
     overlay.show();
 
-    info!("Hello, measurrred!");
+    info!(
+        "measurrred has started in {}s",
+        (begin.elapsed().as_millis() as f64) / 1000.0
+    );
 
     let mut overlay_w = overlay.clone();
     let handle = thread::spawn(move || -> eyre::Result<()> {

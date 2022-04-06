@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, pin::Pin};
 
 use usvg::Options;
 
@@ -6,6 +6,8 @@ use crate::{
     config::MeasurrredConfig,
     system::{Data, DataFormat},
 };
+
+use super::job::Job;
 
 pub struct SetupContext {
     pub usvg_options: Options,
@@ -67,8 +69,8 @@ impl<'a> RenderContext<'a> {
 pub trait ComponentAction {
     fn setup<'a>(
         &'a mut self,
-    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
-        Ok(Box::new(|_| Ok(())))
+    ) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
+        Ok(Vec::new())
     }
 
     fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {

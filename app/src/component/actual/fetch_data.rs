@@ -1,7 +1,13 @@
+use std::pin::Pin;
+
 use serde::Deserialize;
 
 use crate::{
-    component::{action::DataQueryVariable, ComponentAction, SetupContext},
+    component::{
+        action::DataQueryVariable,
+        job::{Job, WaitCompletion},
+        ComponentAction, SetupContext,
+    },
     system::DataFormat,
 };
 
@@ -16,17 +22,22 @@ pub struct FetchData {
 }
 
 impl ComponentAction for FetchData {
-    fn setup<'a>(
-        &'a mut self,
-    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
-        Ok(Box::new(|context| {
-            context.data_queries.push(DataQueryVariable {
-                name: self.name.clone(),
-                source: self.source.clone(),
-                query: self.query.clone(),
-                format: self.format.clone(),
-            });
-            Ok(())
-        }))
+    fn setup(& mut self) -> eyre::Result<Vec<Pin<Box<dyn Job + 'static>>>> {
+        let name = self.name.clone();
+        let source = self.source.clone();
+        let query = self.query.clone();
+        let format = self.format.clone();
+        Ok(vec![WaitCompletion::new(
+            "Adding data query...",
+            move |context| {
+                context.data_queries.push(DataQueryVariable {
+                    name,
+                    source,
+                    query,
+                    format,
+                });
+                Ok(())
+            },
+        )])
     }
 }

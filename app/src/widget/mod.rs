@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
+use futures::StreamExt;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use tracing::info;
 use usvg::NodeExt;
 
 use crate::{
-    component::{Component, ComponentAction, RenderContext, SetupContext, UpdateContext},
+    component::{Component, ComponentAction, JobStage, RenderContext, SetupContext, UpdateContext},
     config::MeasurrredConfig,
     system::{Data, HorizontalPosition, Rect, VerticalPosition},
 };
@@ -29,8 +32,26 @@ impl Widget {
         }
     }
 
-    pub fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        self.component.setup()?(context)?;
+    pub async fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
+        let jobs = self.component.setup()?;
+        let finalizers: Vec<_> = jobs
+            .into_par_iter()
+            .map(|mut job| async move {
+                while let Some(stage) = job.next().await {
+                    info!("{}", stage.label());
+
+                    if let JobStage::Completed { finalizer, .. } = stage {
+                        return Some(finalizer);
+                    }
+                }
+                None
+            })
+            .collect();
+        for finalizer in finalizers {
+            if let Some(finalizer) = finalizer.await {
+                finalizer(context)?;
+            }
+        }
 
         Ok(())
     }

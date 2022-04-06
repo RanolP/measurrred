@@ -1,7 +1,10 @@
+use std::pin::Pin;
+
 use serde::Deserialize;
 use tracing::info;
 use url::Url;
 
+use crate::component::job::{Job, WaitCompletion};
 use crate::util::http;
 
 use crate::component::{ComponentAction, SetupContext};
@@ -13,19 +16,20 @@ pub struct ImportFont {
 }
 
 impl ComponentAction for ImportFont {
-    fn setup<'a>(
-        &'a mut self,
-    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
+    fn setup<'a>(&'a mut self) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
         info!("Try loading {}...", self.url);
         match self.url.scheme() {
             "http" | "https" => {
                 let data = http::get(&self.url)
                     .map_err(|_| eyre::eyre!("Failed to request {}", self.url))?;
-                Ok(Box::new(|context| {
-                    context.usvg_options.fontdb.load_font_data(data);
-                    info!("Loaded {}!", self.url);
-                    Ok(())
-                }))
+
+                Ok(vec![WaitCompletion::new(
+                    format!("Loaded {}!", self.url),
+                    move |context| {
+                        context.usvg_options.fontdb.load_font_data(data);
+                        Ok(())
+                    },
+                )])
             }
             "file" => {
                 let data = std::fs::read(
@@ -34,11 +38,13 @@ impl ComponentAction for ImportFont {
                         .map_err(|_| eyre::eyre!("Failed to convert {} into path.", self.url))?,
                 )?;
 
-                Ok(Box::new(|context| {
-                    context.usvg_options.fontdb.load_font_data(data);
-                    info!("Loaded {}!", self.url);
-                    Ok(())
-                }))
+                Ok(vec![WaitCompletion::new(
+                    format!("Loaded {}!", self.url),
+                    move |context| {
+                        context.usvg_options.fontdb.load_font_data(data);
+                        Ok(())
+                    },
+                )])
             }
             scheme => eyre::bail!("Unsupported url scheme: {}", scheme),
         }

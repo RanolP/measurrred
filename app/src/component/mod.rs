@@ -1,4 +1,5 @@
 use std::fmt;
+use std::pin::Pin;
 
 use serde::Deserialize;
 use usvg::{Node, NodeKind};
@@ -7,9 +8,11 @@ use crate::system::Length;
 
 pub use self::action::{ComponentAction, RenderContext, SetupContext, UpdateContext};
 pub use self::actual::*;
+pub use self::job::*;
 
 mod action;
 mod actual;
+mod job;
 
 #[derive(Deserialize)]
 pub enum Component {
@@ -63,8 +66,7 @@ impl fmt::Debug for Component {
 
 impl ComponentAction for Component {
     fn setup<'a>(
-        &'a mut self,
-    ) -> eyre::Result<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send + 'a>> {
+        &'a mut self,) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
         match self {
             Component::Text(text) => text.setup(),
             Component::HBox(hbox) => hbox.setup(),
@@ -75,7 +77,7 @@ impl ComponentAction for Component {
             Component::ImportFont(import_font) => import_font.setup(),
             Component::If(r#if) => r#if.setup(),
             Component::Overlap { child } => child.setup(),
-            Component::Margin { .. } | Component::SetPosition { .. } => Ok(Box::new(|_| Ok(()))),
+            Component::Margin { .. } | Component::SetPosition { .. } => Ok(Vec::new()),
         }
     }
 

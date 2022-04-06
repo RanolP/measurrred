@@ -7,7 +7,7 @@ use windows::{
     Win32::System::Performance::{
         PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
         PDH_CALC_NEGATIVE_DENOMINATOR, PDH_CSTATUS_INVALID_DATA, PDH_FMT_COUNTERVALUE,
-        PDH_FMT_DOUBLE, PDH_FMT_LARGE, PDH_FMT_LONG, PDH_INVALID_DATA, PDH_NO_DATA,
+        PDH_FMT_DOUBLE, PDH_FMT_LARGE, PDH_FMT_LONG, PDH_INVALID_DATA, PDH_NO_DATA, PDH_CALC_NEGATIVE_VALUE,
     },
 };
 
@@ -93,7 +93,8 @@ impl DataSource for PdhDataSource {
             PDH_CALC_NEGATIVE_DENOMINATOR
             | PDH_INVALID_DATA
             | PDH_NO_DATA
-            | PDH_CSTATUS_INVALID_DATA => {
+            | PDH_CSTATUS_INVALID_DATA
+            | PDH_CALC_NEGATIVE_VALUE => {
                 return Ok(Data::Unknown);
             }
             _ => {
