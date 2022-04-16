@@ -1,4 +1,4 @@
-use std::{collections::LinkedList, rc::Rc, pin::Pin};
+use std::{collections::LinkedList, rc::Rc};
 
 use serde::Deserialize;
 use tracing_unwrap::OptionExt;
@@ -7,7 +7,7 @@ use usvg::{
 };
 
 use crate::{
-    component::{ComponentAction, RenderContext, SetupContext, job::Job},
+    component::{job::Job, ComponentAction, RenderContext},
     system::{Color, Data, Length},
 };
 
@@ -44,10 +44,9 @@ const fn default_fill_opacity() -> f64 {
 }
 
 impl ComponentAction for Graph {
-    fn setup<'a>(
-        &'a mut self,) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
+    fn setup<'a>(&'a mut self) -> Vec<Job> {
         self.samples = LinkedList::from_iter(vec![f64::NAN; self.sample_count].into_iter());
-        Ok(Vec::new())
+        Vec::new()
     }
 
     fn render(&mut self, context: &RenderContext) -> eyre::Result<usvg::Node> {

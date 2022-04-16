@@ -1,15 +1,9 @@
-use std::fmt::Display;
-
-use futures::Stream;
+use std::pin::Pin;
 
 use super::SetupContext;
+use futures::Stream;
 
-mod wait_completion;
-
-pub use wait_completion::*;
-
-pub trait Job: Stream<Item = JobStage> + Send {
-}
+pub type Job<'a> = Pin<Box<dyn Stream<Item = eyre::Result<JobStage>> + Send + 'a>>;
 
 pub enum JobStage {
     Progress {
@@ -18,8 +12,11 @@ pub enum JobStage {
     },
     Completed {
         label: String,
-        finalizer: Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()>>
-    }
+        finalizer: Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + Send>,
+    },
+    Fail {
+        label: String,
+    },
 }
 
 impl JobStage {
@@ -27,6 +24,7 @@ impl JobStage {
         match self {
             JobStage::Progress { label, .. } => &label,
             JobStage::Completed { label, .. } => &label,
+            JobStage::Fail { label } => &label,
         }
     }
 
@@ -34,6 +32,11 @@ impl JobStage {
         match self {
             JobStage::Progress { value, .. } => *value,
             JobStage::Completed { .. } => 1.0,
+            JobStage::Fail { .. } => 1.0,
         }
+    }
+
+    pub fn has_failed(&self) -> bool {
+        matches!(self, JobStage::Fail { .. })
     }
 }

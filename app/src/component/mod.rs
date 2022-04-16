@@ -1,5 +1,4 @@
 use std::fmt;
-use std::pin::Pin;
 
 use serde::Deserialize;
 use usvg::{Node, NodeKind};
@@ -65,8 +64,7 @@ impl fmt::Debug for Component {
 }
 
 impl ComponentAction for Component {
-    fn setup<'a>(
-        &'a mut self,) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
+    fn setup(&mut self) -> Vec<Job> {
         match self {
             Component::Text(text) => text.setup(),
             Component::HBox(hbox) => hbox.setup(),
@@ -77,7 +75,7 @@ impl ComponentAction for Component {
             Component::ImportFont(import_font) => import_font.setup(),
             Component::If(r#if) => r#if.setup(),
             Component::Overlap { child } => child.setup(),
-            Component::Margin { .. } | Component::SetPosition { .. } => Ok(Vec::new()),
+            Component::Margin { .. } | Component::SetPosition { .. } => Vec::new(),
         }
     }
 

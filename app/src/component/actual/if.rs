@@ -1,9 +1,7 @@
-use std::pin::Pin;
-
 use serde::Deserialize;
 
 use crate::{
-    component::{Component, ComponentAction, RenderContext, job::Job},
+    component::{job::Job, Component, ComponentAction, RenderContext},
     system::Data,
 };
 
@@ -42,16 +40,16 @@ pub struct If {
 }
 
 impl ComponentAction for If {
-    fn setup<'a>(
-        &'a mut self,) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
-        let then_fn = self.then.setup()?.into_iter();
+    fn setup(&mut self) -> Vec<Job> {
+        let then_fn = self.then.setup().into_iter();
         let else_fn = self
             .otherwise
             .as_mut()
             .map(|otherwise| otherwise.setup())
-            .transpose()?.into_iter().flatten();
+            .into_iter()
+            .flatten();
 
-        Ok(then_fn.chain(else_fn).collect())
+        then_fn.chain(else_fn).collect()
     }
 
     fn update(&mut self, context: &mut crate::component::UpdateContext) -> eyre::Result<()> {

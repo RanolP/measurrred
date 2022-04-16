@@ -1,11 +1,10 @@
-use std::{rc::Rc, pin::Pin};
+use std::rc::Rc;
 
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use serde::Deserialize;
 use usvg::{Group, Node, NodeExt, NodeKind, Path, PathData, Rect, Transform};
 
 use crate::{
-    component::{job::Job, Component, ComponentAction, RenderContext, SetupContext, UpdateContext},
+    component::{job::Job, Component, ComponentAction, RenderContext, UpdateContext},
     system::VerticalAlignment,
 };
 
@@ -19,13 +18,11 @@ pub struct HBox {
 }
 
 impl ComponentAction for HBox {
-    fn setup<'a>(&'a mut self) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
-        let setup_functions = self
-            .children
-            .par_iter_mut()
-            .map(|child| child.setup())
-            .collect::<eyre::Result<Vec<_>>>()?;
-        Ok(setup_functions.into_iter().flatten().collect())
+    fn setup(&mut self) -> Vec<Job> {
+        self.children
+            .iter_mut()
+            .flat_map(|child| child.setup())
+            .collect()
     }
 
     fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {

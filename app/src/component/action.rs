@@ -1,4 +1,4 @@
-use std::{collections::HashMap, pin::Pin};
+use std::collections::HashMap;
 
 use usvg::Options;
 
@@ -67,10 +67,8 @@ impl<'a> RenderContext<'a> {
 }
 
 pub trait ComponentAction {
-    fn setup<'a>(
-        &'a mut self,
-    ) -> eyre::Result<Vec<Pin<Box<dyn Job + 'a>>>> {
-        Ok(Vec::new())
+    fn setup(&mut self) -> Vec<Job> {
+        Vec::new()
     }
 
     fn update(&mut self, context: &mut UpdateContext) -> eyre::Result<()> {

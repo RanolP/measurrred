@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
-use futures::StreamExt;
-use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use futures::{future::join_all, StreamExt};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use tracing::info;
 use usvg::NodeExt;
 
 use crate::{
-    component::{Component, ComponentAction, JobStage, RenderContext, SetupContext, UpdateContext},
+    component::{
+        Component, ComponentAction, Job, JobStage, RenderContext, SetupContext, UpdateContext,
+    },
     config::MeasurrredConfig,
     system::{Data, HorizontalPosition, Rect, VerticalPosition},
 };
@@ -32,23 +34,32 @@ impl Widget {
         }
     }
 
-    pub async fn setup(&mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        let jobs = self.component.setup()?;
-        let finalizers: Vec<_> = jobs
-            .into_par_iter()
-            .map(|mut job| async move {
-                while let Some(stage) = job.next().await {
-                    info!("{}", stage.label());
+    pub async fn setup<'a>(&'a mut self, context: &mut SetupContext) -> eyre::Result<()> {
+        async fn process<'a>(
+            (id, mut job): (usize, Job<'a>),
+        ) -> eyre::Result<Option<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + 'a>>>
+        {
+            while let Some(stage) = job.next().await.transpose()? {
+                info!("#{}: {}", id, stage.label());
 
-                    if let JobStage::Completed { finalizer, .. } = stage {
-                        return Some(finalizer);
-                    }
+                match stage {
+                    JobStage::Completed { finalizer, .. } => return Ok(Some(finalizer)),
+                    JobStage::Progress { .. } => {}
+                    JobStage::Fail { label } => eyre::bail!("{}", label),
                 }
-                None
-            })
+            }
+            Ok(None)
+        }
+        let jobs = self.component.setup();
+        let finalizers: Vec<_> = jobs
+            .into_iter()
+            .enumerate()
+            .collect::<Vec<_>>()
+            .into_par_iter()
+            .map(process)
             .collect();
-        for finalizer in finalizers {
-            if let Some(finalizer) = finalizer.await {
+        for finalizer in join_all(finalizers).await {
+            if let Some(finalizer) = finalizer? {
                 finalizer(context)?;
             }
         }

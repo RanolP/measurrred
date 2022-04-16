@@ -1,4 +1,3 @@
-use futures::executor;
 use http_cache::{CACacheManager, CacheMode, HttpCache};
 use http_cache_surf::Cache;
 use once_cell::sync::Lazy;
@@ -14,11 +13,7 @@ static CLIENT: Lazy<Client> = Lazy::new(|| {
     }))
 });
 
-pub fn get(url: impl AsRef<str>) -> Result<Vec<u8>> {
-    executor::block_on(get_async(url))
-}
-
-async fn get_async(url: impl AsRef<str>) -> Result<Vec<u8>> {
+pub async fn get(url: impl AsRef<str>) -> Result<Vec<u8>> {
     let mut response = CLIENT.get(url).send().await?;
     Ok(response.body_bytes().await?)
 }
