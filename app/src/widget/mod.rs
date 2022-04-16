@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use futures::{future::join_all, StreamExt};
+use futures::{future::join_all, StreamExt, stream::FuturesUnordered};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use tracing::info;
 use usvg::NodeExt;
@@ -35,9 +35,9 @@ impl Widget {
     }
 
     pub async fn setup<'a>(&'a mut self, context: &mut SetupContext) -> eyre::Result<()> {
-        async fn process<'a>(
-            (id, mut job): (usize, Job<'a>),
-        ) -> eyre::Result<Option<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + 'a>>>
+        async fn process(
+            (id, mut job): (usize, Job),
+        ) -> eyre::Result<Option<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + 'static + Send>>>
         {
             while let Some(stage) = job.next().await.transpose()? {
                 info!("#{}: {}", id, stage.label());
@@ -55,10 +55,12 @@ impl Widget {
             .into_iter()
             .enumerate()
             .collect::<Vec<_>>()
-            .into_par_iter()
+            .into_iter()
             .map(process)
+            .map(async_std::task::spawn)
             .collect();
-        for finalizer in join_all(finalizers).await {
+        let finalizers = join_all(finalizers).await;
+        for finalizer in finalizers {
             if let Some(finalizer) = finalizer? {
                 finalizer(context)?;
             }

@@ -22,25 +22,26 @@ pub enum FontImportStage {
 
 impl ComponentAction for ImportFont {
     fn setup(&mut self) -> Vec<Job> {
+        let url = self.url.clone();
         vec![Box::pin(try_stream! {
             yield JobStage::Progress {
-                label: format!("Try loading {}", self.url),
+                label: format!("Try loading {}", url),
                 value: 0.0
             };
-            let data = match self.url.scheme() {
+            let data = match url.scheme() {
                 "http" | "https" => {
                     yield JobStage::Progress {
-                        label: format!("Fetching {} from online...", self.url),
+                        label: format!("Fetching {} from online...", url),
                         value: 3.0
                     };
-                    http::get(&self.url).await
-                .map_err(|_| eyre::eyre!("Failed to request {}", self.url))?
+                    http::get(&url).await
+                .map_err(|_| eyre::eyre!("Failed to request {}", url))?
                 }
                 "file" => {
                     std::fs::read(
-                        self.url
+                        url
                             .to_file_path()
-                            .map_err(|_| eyre::eyre!("Failed to convert {} into path.", self.url))?,
+                            .map_err(|_| eyre::eyre!("Failed to convert {} into path.", url))?,
                     )?
                 }
                 scheme => {
@@ -51,7 +52,7 @@ impl ComponentAction for ImportFont {
                 },
             };
             yield JobStage::Completed {
-                label: format!("Loaded {}!", self.url),
+                label: format!("Loaded {}!", url),
                 finalizer: Box::new(move |context| {
                     context.usvg_options.fontdb.load_font_data(data);
                     Ok(())

@@ -3,7 +3,7 @@ use std::pin::Pin;
 use super::SetupContext;
 use futures::Stream;
 
-pub type Job<'a> = Pin<Box<dyn Stream<Item = eyre::Result<JobStage>> + Send + 'a>>;
+pub type Job = Pin<Box<dyn Stream<Item = eyre::Result<JobStage>> + Send + 'static>>;
 
 pub enum JobStage {
     Progress {
