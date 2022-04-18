@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use futures::{future::join_all, StreamExt, stream::FuturesUnordered};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use futures::{future::join_all, StreamExt};
 use tracing::info;
 use usvg::NodeExt;
 
@@ -37,8 +36,9 @@ impl Widget {
     pub async fn setup<'a>(&'a mut self, context: &mut SetupContext) -> eyre::Result<()> {
         async fn process(
             (id, mut job): (usize, Job),
-        ) -> eyre::Result<Option<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + 'static + Send>>>
-        {
+        ) -> eyre::Result<
+            Option<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + 'static + Send>>,
+        > {
             while let Some(stage) = job.next().await.transpose()? {
                 info!("#{}: {}", id, stage.label());
 
