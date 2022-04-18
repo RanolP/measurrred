@@ -44,3 +44,45 @@ Should be careful when reading this comparison list. I, as a user and a creator 
 ### Cons
 
 - Only support Windows
+
+## [Taskbar stats](https://openhoangnc.github.io/taskbar-stats/)
+
+### Pros
+
+- It works
+
+### Cons
+
+- Only support Windows
+- Depends on Taskband API
+
+## [XMeters](https://entropy6.com/xmeters/)
+
+### Pros
+
+- It has a great feature set
+
+### Cons
+
+- Only support Windows
+
+## [BatteryBar Pro](https://batterybarpro.com/)
+
+### Pros
+
+- It works
+
+### Cons
+
+- Only support Windows
+- Refused to support Taskband-ish UI
+
+## [TrafficMonitor](https://github.com/zhongyang219/TrafficMonitor)
+
+### Pros
+
+- It works
+
+### Cons
+
+- Only support Windows
