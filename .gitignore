@@ -2,7 +2,7 @@
 target/
 
 # Personal Stuff
-.cache/
+.assets/
 logs/
 
 # Auto Generated Stuff

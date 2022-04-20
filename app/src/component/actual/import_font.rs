@@ -24,20 +24,19 @@ impl ComponentAction for ImportFont {
     fn setup(&mut self) -> Vec<Job> {
         let url = self.url.clone();
         vec![Box::pin(try_stream! {
-            yield JobStage::Progress {
-                label: format!("Try loading {}", url),
-                value: 0.0
-            };
             let data = match url.scheme() {
                 "http" | "https" => {
                     yield JobStage::Progress {
-                        label: format!("Fetching {} from online...", url),
-                        value: 3.0
+                        label: format!("Reading {} from online...", url),
+                        value: 0.0
                     };
-                    http::get(&url).await
-                .map_err(|_| eyre::eyre!("Failed to request {}", url))?
+                    http::get(&url).await.map_err(|_| eyre::eyre!("Failed to request {}", url))?
                 }
                 "file" => {
+                    yield JobStage::Progress {
+                        label: format!("Reading {} from file...", url),
+                        value: 0.0
+                    };
                     std::fs::read(
                         url
                             .to_file_path()

@@ -36,32 +36,32 @@ impl Widget {
     pub async fn setup<'a>(&'a mut self, context: &mut SetupContext) -> eyre::Result<()> {
         async fn process(
             (id, mut job): (usize, Job),
-        ) -> eyre::Result<
+        ) -> eyre::Result<(
+            usize,
             Option<Box<dyn FnOnce(&mut SetupContext) -> eyre::Result<()> + 'static + Send>>,
-        > {
+        )> {
             while let Some(stage) = job.next().await.transpose()? {
                 info!("#{}: {}", id, stage.label());
 
                 match stage {
-                    JobStage::Completed { finalizer, .. } => return Ok(Some(finalizer)),
+                    JobStage::Completed { finalizer, .. } => return Ok((id, Some(finalizer))),
                     JobStage::Progress { .. } => {}
                     JobStage::Fail { label } => eyre::bail!("{}", label),
                 }
             }
-            Ok(None)
+            Ok((id, None))
         }
         let jobs = self.component.setup();
         let finalizers: Vec<_> = jobs
             .into_iter()
             .enumerate()
-            .collect::<Vec<_>>()
-            .into_iter()
             .map(process)
             .map(async_std::task::spawn)
             .collect();
         let finalizers = join_all(finalizers).await;
         for finalizer in finalizers {
-            if let Some(finalizer) = finalizer? {
+            if let (id, Some(finalizer)) = finalizer? {
+                info!("Finalizing #{}...", id);
                 finalizer(context)?;
             }
         }
