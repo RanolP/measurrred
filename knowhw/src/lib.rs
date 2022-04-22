@@ -1,5 +1,8 @@
 use std::error::Error;
 
+#[cfg(target_os = "windows")]
+pub mod windows;
+
 pub trait Knowhw<Query, Answer> {
     type Error: Error;
 
