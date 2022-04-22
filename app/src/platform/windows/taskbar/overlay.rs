@@ -71,7 +71,11 @@ impl TaskbarOverlay {
     pub fn new(target: TaskbarHandle) -> Result<Self, TaskbarOverlayError> {
         become_dpi_aware()?;
 
-        let instance = unsafe { GetModuleHandleW(PCWSTR(null_mut())) }.ok()?;
+        let instance = unsafe { GetModuleHandleW(PCWSTR(null_mut())) };
+
+        if instance.0 == 0 {
+            Err(::windows::core::Error::from_win32())?;
+        }
 
         println!("I don't know why but RegisterClassW makes bug if it was called too fast. So I decided to do I/O operation for delaying RegisterClassW call.");
 
@@ -103,8 +107,11 @@ impl TaskbarOverlay {
                 instance,
                 null_mut(),
             )
+        };
+        
+        if hwnd.0 == 0 {
+            Err(::windows::core::Error::from_win32())?;
         }
-        .ok()?;
 
         let (tray, actual_tray) = TrayIcon::new(hwnd.clone())?;
         tray.add()?;
@@ -179,7 +186,7 @@ impl TaskbarOverlay {
     }
 
     pub fn is_valid(&self) -> bool {
-        !self.hwnd.is_invalid()
+        self.hwnd.0 != 0
     }
 
     pub fn begin_event_loop(&self) -> eyre::Result<()> {

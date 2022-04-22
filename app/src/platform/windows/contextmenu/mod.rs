@@ -20,7 +20,7 @@ impl ContextMenu {
             Box<dyn FnMut() -> windows::core::Result<()> + Send + Sync>,
         )>,
     ) -> windows::core::Result<Self> {
-        let handle = unsafe { CreatePopupMenu() }.ok()?;
+        let handle = unsafe { CreatePopupMenu() }?;
 
         for (idx, (name, _)) in item_list.iter().enumerate() {
             unsafe { AppendMenuW(handle, MF_STRING, WM_USER as usize + idx, name.clone()) }.ok()?;

@@ -43,9 +43,12 @@ impl TrayIcon {
     const MESSAGE_ID: u32 = WM_USER + 1;
 
     pub fn new(main_window: HWND) -> Result<(TrayIcon, ActualTrayIcon), TrayIconError> {
-        let instance = unsafe { GetModuleHandleW(PCWSTR(null_mut())) }.ok()?;
+        let instance = unsafe { GetModuleHandleW(PCWSTR(null_mut())) };
+        if instance.0 == 0 {
+            Err(::windows::core::Error::from_win32())?;
+        }
 
-        let icon = unsafe { LoadIconW(instance, IDI_TRAYICON) }.ok()?;
+        let icon = unsafe { LoadIconW(instance, IDI_TRAYICON) }?;
 
         let mut tip = [0u16; 128];
 

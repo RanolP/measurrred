@@ -62,7 +62,7 @@ impl TaskbarHandle {
             .map(|hwnd| {
                 let rebar_hwnd =
                     unsafe { FindWindowExW(hwnd, HWND(0), "ReBarWindow32", PCWSTR(null_mut())) };
-                if rebar_hwnd.is_invalid() {
+                if rebar_hwnd.0 == 0 {
                     Err(windows::core::Error::from_win32())
                 } else {
                     Ok(TaskbarHandle {
