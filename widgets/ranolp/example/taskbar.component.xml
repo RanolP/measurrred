@@ -20,6 +20,13 @@
         format="float"
     />
     <fetch-data 
+        name="cpu-mhz"
+
+        source="windows/pdh"
+        query="\Processor Information(_Total)\Processor Frequency"
+        format="i64"
+    />
+    <fetch-data 
         name="ram%"
 
         source="windows/global-memory-status"
@@ -73,19 +80,31 @@
                 name="cpu%"
             />
             <set-position to="0px" />
-            <hbox y-align="center">
-                <margin size="2px" />
-                <text color="yellow" font-family="Pretendard" font-weight="bolder">CPU</text>
-                <set-position to="130px" />
+            <vbox x-align="center">
+				<hbox y-align="center">
+					<margin size="2px" />
+					<text color="yellow" font-family="Pretendard" font-weight="bolder">CPU</text>
+					<set-position to="130px" />
+					<text
+						font-family="Pretendard"
+						text-align="right"
+						font-size="24"
+						font-weight="bolder"
+					>
+						<variable name="cpu%" format="float" />%
+					</text>
+				</hbox>
                 <text
                     font-family="Pretendard"
-                    text-align="right"
-                    font-size="24"
-                    font-weight="bolder"
+                    font-size="12"
+                    font-weight="normal"
                 >
-                    <variable name="cpu%" format="float" />%
+                    <variable name="cpu-mhz" format="float" divide-by="1024" />
+                    &#x0020;
+                    &#x0020;
+                    GHz
                 </text>
-            </hbox>
+			</vbox>
         </vbox>
         <margin size="4px" />
         <vbox>

@@ -19,6 +19,13 @@
         query="RemainingCapacityInPercentage"
         format="float"
     />
+    <fetch-data 
+        name="power-consumption-mW"
+
+        source="windows/pdh"
+        query="\Power Meter(_Total)\Power"
+        format="float"
+    />
 
 
     <hbox>
@@ -39,19 +46,33 @@
                 name="battery%"
             />
             <set-position to="0px" />
-            <hbox y-align="center">
-                <margin size="2px" />
-                <text color="yellow" font-family="Pretendard" font-weight="bolder">Battery</text>
-                <set-position to="160px" />
-                <text
-                    font-family="Pretendard"
-                    text-align="right"
-                    font-size="24"
-                    font-weight="bolder"
-                >
-                    <variable name="battery%" format="float" />%
-                </text>
-            </hbox>
+			<vbox x-align="right">
+				<hbox y-align="center">
+					<margin size="2px" />
+					<text color="yellow" font-family="Pretendard" font-weight="bolder">Battery</text>
+					<set-position to="160px" />
+					<text
+						font-family="Pretendard"
+						text-align="right"
+						font-size="24"
+						font-weight="bolder"
+					>
+						<variable name="battery%" format="float" />%
+					</text>
+				</hbox>
+				<hbox>
+					<text
+						font-family="Pretendard"
+						font-size="12"
+						font-weight="normal"
+					>
+						-<variable name="power-consumption-mW" format="float" divide-by="1000" />
+						&#x0020;
+						W
+					</text>
+					<margin size="12px" />
+				</hbox>
+			</vbox>
         </vbox>
     </hbox>
 </group>
