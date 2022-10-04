@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 declarrred = { path = "../declarrred" }
 assettled = { path = "../assettled" }
+knowhw = { path = "../knowhw" }
 
 once_cell = "1.10.0"
 

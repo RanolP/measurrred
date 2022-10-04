@@ -1,14 +1,16 @@
 use std::error::Error;
 
+use declarrred::rt::{Data, DataFormat};
+
 #[cfg(target_os = "windows")]
 pub mod windows;
 
-pub trait Knowhw<Query, Answer> {
+pub trait Knowhw {
     type Error: Error;
 
-    fn update(&mut self) -> Result<(), Self::Error> {
+    fn update(&self) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    fn query(&mut self, query: &Query) -> Result<Answer, Self::Error>;
+    fn query(&mut self, query: &str, preferred_format: &DataFormat) -> Result<Data, Self::Error>;
 }
