@@ -1,8 +1,8 @@
+use declarrred::rt::{DataFormat, Data};
 use serde::{de::DeserializeOwned, Deserialize};
 
 use crate::{
     component::RenderContext,
-    system::{Data, DataFormat},
     util::serde::FromStrT,
 };
 // We need FromStrT<T> because of the limitation of serde, we only can receive

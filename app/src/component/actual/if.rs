@@ -1,9 +1,7 @@
+use declarrred::rt::Data;
 use serde::Deserialize;
 
-use crate::{
-    component::{job::Job, Component, ComponentAction, RenderContext},
-    system::Data,
-};
+use crate::component::{job::Job, Component, ComponentAction, RenderContext};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]

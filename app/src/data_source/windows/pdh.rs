@@ -2,6 +2,7 @@
 
 use std::{collections::HashMap, ptr::null_mut};
 
+use declarrred::rt::{DataFormat, Data};
 use windows::{
     core::PCWSTR,
     Win32::System::Performance::{
@@ -13,7 +14,6 @@ use windows::{
 
 use crate::{
     data_source::DataSource,
-    system::{Data, DataFormat},
 };
 
 pub struct PdhDataSource {

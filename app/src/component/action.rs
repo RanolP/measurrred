@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
+use declarrred::rt::{DataFormat, Data};
 use usvg::Options;
 
-use crate::{
-    config::MeasurrredConfig,
-    system::{Data, DataFormat},
-};
+use crate::config::MeasurrredConfig;
 
 use super::job::Job;
 

@@ -1,10 +1,10 @@
 #![cfg(target_os = "windows")]
 
+use declarrred::rt::{DataFormat, Data};
 use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
 
 use crate::{
     data_source::DataSource,
-    system::{Data, DataFormat},
 };
 
 pub struct GlobalMemoryStatusDataSource;

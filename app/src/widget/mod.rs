@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use declarrred::rt::Data;
 use futures::{future::join_all, StreamExt};
 use tracing::info;
 use usvg::NodeExt;
@@ -9,7 +10,7 @@ use crate::{
         Component, ComponentAction, Job, JobStage, RenderContext, SetupContext, UpdateContext,
     },
     config::MeasurrredConfig,
-    system::{Data, HorizontalPosition, Rect, VerticalPosition},
+    system::{HorizontalPosition, Rect, VerticalPosition},
 };
 
 pub use self::config::WidgetConfig;

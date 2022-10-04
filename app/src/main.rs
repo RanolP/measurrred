@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 
-use std::ptr::null_mut;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
 
@@ -21,14 +20,12 @@ use app::{
         BatteryReportDataSource, BoxedDataSource, GlobalMemoryStatusDataSource, PdhDataSource,
     },
 };
-use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
 
 mod log;
 
 #[async_std::main]
 async fn main() -> eyre::Result<()> {
     log::initialize_tracing_logger();
-    // unsafe { CoInitializeEx(null_mut(), COINIT_MULTITHREADED) }?;
 
     let begin = Instant::now();
 

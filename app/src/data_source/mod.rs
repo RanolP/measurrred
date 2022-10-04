@@ -1,5 +1,6 @@
+use declarrred::rt::{DataFormat, Data};
+
 pub use self::windows::*;
-use crate::system::{Data, DataFormat};
 
 mod windows;
 

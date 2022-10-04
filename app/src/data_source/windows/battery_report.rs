@@ -1,8 +1,8 @@
+use declarrred::rt::{DataFormat, Data};
 use windows::{Devices::Power::Battery, System::Power::BatteryStatus};
 
 use crate::{
     data_source::DataSource,
-    system::{Data, DataFormat},
 };
 
 pub struct BatteryReportDataSource;

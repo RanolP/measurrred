@@ -1,10 +1,8 @@
 use async_stream::try_stream;
+use declarrred::rt::DataFormat;
 use serde::Deserialize;
 
-use crate::{
-    component::{action::DataQueryVariable, job::Job, ComponentAction, JobStage},
-    system::DataFormat,
-};
+use crate::component::{action::DataQueryVariable, job::Job, ComponentAction, JobStage};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]

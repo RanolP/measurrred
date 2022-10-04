@@ -712,6 +712,10 @@ dependencies = [
 [[package]]
 name = "declarrred"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "deflate"

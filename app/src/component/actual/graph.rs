@@ -1,5 +1,6 @@
 use std::{collections::LinkedList, rc::Rc};
 
+use declarrred::rt::Data;
 use serde::Deserialize;
 use tracing_unwrap::OptionExt;
 use usvg::{
@@ -8,7 +9,7 @@ use usvg::{
 
 use crate::{
     component::{job::Job, ComponentAction, RenderContext},
-    system::{Color, Data, Length},
+    system::{Color, Length},
 };
 
 #[derive(Deserialize)]
