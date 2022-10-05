@@ -16,7 +16,7 @@ use app::widget::load_widget;
 use app::{
     component::SetupContext,
     config::MeasurrredConfig,
-    data_source::{BoxedDataSource, GlobalMemoryStatusDataSource, KnowhwDataSource, PdhDataSource},
+    data_source::{BoxedDataSource, KnowhwDataSource, PdhDataSource},
 };
 
 mod log;
@@ -35,8 +35,14 @@ async fn main() -> eyre::Result<()> {
 
     let data_source_list: Vec<BoxedDataSource> = vec![
         Box::new(PdhDataSource::new().unwrap_or_log()),
-        Box::new(GlobalMemoryStatusDataSource),
-        Box::new(KnowhwDataSource("windows/battery-report", knowhw::windows::BatteryReport)),
+        Box::new(KnowhwDataSource(
+            "windows/global-memory-status",
+            knowhw::windows::GlobalMemoryStatus,
+        )),
+        Box::new(KnowhwDataSource(
+            "windows/battery-report",
+            knowhw::windows::BatteryReport,
+        )),
     ];
     let mut data_source = HashMap::<String, BoxedDataSource>::from_iter(
         data_source_list
@@ -192,6 +198,8 @@ async fn main() -> eyre::Result<()> {
     }
 
     overlay.shutdown()?;
+
+    info!("The program gracefully exited.");
 
     Ok(())
 }

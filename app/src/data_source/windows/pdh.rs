@@ -2,19 +2,18 @@
 
 use std::{collections::HashMap, ptr::null_mut};
 
-use declarrred::rt::{DataFormat, Data};
+use declarrred::rt::{Data, DataFormat};
 use windows::{
     core::PCWSTR,
     Win32::System::Performance::{
         PdhAddEnglishCounterW, PdhCollectQueryData, PdhGetFormattedCounterValue, PdhOpenQueryW,
-        PDH_CALC_NEGATIVE_DENOMINATOR, PDH_CSTATUS_INVALID_DATA, PDH_FMT_COUNTERVALUE,
-        PDH_FMT_DOUBLE, PDH_FMT_LARGE, PDH_FMT_LONG, PDH_INVALID_DATA, PDH_NO_DATA, PDH_CALC_NEGATIVE_VALUE,
+        PDH_CALC_NEGATIVE_DENOMINATOR, PDH_CALC_NEGATIVE_VALUE, PDH_CSTATUS_INVALID_DATA,
+        PDH_FMT_COUNTERVALUE, PDH_FMT_DOUBLE, PDH_FMT_LARGE, PDH_FMT_LONG, PDH_INVALID_DATA,
+        PDH_NO_DATA,
     },
 };
 
-use crate::{
-    data_source::DataSource,
-};
+use crate::data_source::DataSource;
 
 pub struct PdhDataSource {
     query: isize,
@@ -80,8 +79,10 @@ impl DataSource for PdhDataSource {
                     f @ DataFormat::String | f @ DataFormat::Bool => {
                         eyre::bail!("Unsupported format: {:?}", f)
                     }
-                    DataFormat::I32 => PDH_FMT_LONG,
-                    DataFormat::I64 | DataFormat::Int => PDH_FMT_LARGE,
+                    DataFormat::I32 | DataFormat::U32 => PDH_FMT_LONG,
+                    DataFormat::I64 | DataFormat::Int | DataFormat::U64 | DataFormat::UInt => {
+                        PDH_FMT_LARGE
+                    }
                     DataFormat::F64 | DataFormat::Float => PDH_FMT_DOUBLE,
                 },
                 null_mut(),
@@ -108,8 +109,10 @@ impl DataSource for PdhDataSource {
                 f @ DataFormat::String | f @ DataFormat::Bool => {
                     eyre::bail!("Unsupported format: {:?}", f)
                 }
-                DataFormat::I32 => Data::I32(value.Anonymous.longValue as _),
+                DataFormat::I32 => Data::I32(value.Anonymous.longValue),
+                DataFormat::U32 => Data::U32(value.Anonymous.longValue as _),
                 DataFormat::I64 | DataFormat::Int => Data::I64(value.Anonymous.largeValue),
+                DataFormat::U64 | DataFormat::UInt => Data::U64(value.Anonymous.largeValue as _),
                 DataFormat::F64 | DataFormat::Float => Data::F64(value.Anonymous.doubleValue),
             }
         };

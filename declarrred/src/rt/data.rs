@@ -8,7 +8,9 @@ use super::DataFormat;
 pub enum Data {
     String(String),
     I32(i32),
+    U32(u32),
     I64(i64),
+    U64(u64),
     F64(f64),
     Bool(bool),
     Unknown,
@@ -29,23 +31,43 @@ impl Data {
         Ok(match self {
             Data::String(v) => Cow::Borrowed(&v),
             Data::I32(v) => Cow::Owned(v.to_string()),
+            Data::U32(v) => Cow::Owned(v.to_string()),
             Data::I64(v) => Cow::Owned(v.to_string()),
+            Data::U64(v) => Cow::Owned(v.to_string()),
             Data::F64(v) => Cow::Owned(v.to_string()),
             Data::Bool(v) => Cow::Owned(v.to_string()),
             Data::Unknown => Cow::Borrowed(""),
         })
     }
 
-    pub fn as_int(&self) -> Result<i64, DataConversionError> {
+    pub fn as_i64(&self) -> Result<i64, DataConversionError> {
         match self {
             Data::String(v) => v.parse().map_err(|_| DataConversionError {
                 from_format: Some(DataFormat::String),
                 to_format: DataFormat::Int,
             }),
             Data::I32(v) => Ok(*v as i64),
+            Data::U32(v) => Ok(*v as i64),
             Data::I64(v) => Ok(*v),
+            Data::U64(v) => Ok(*v as i64),
             Data::F64(v) => Ok(*v as i64),
             Data::Bool(v) => Ok(*v as i64),
+            Data::Unknown => Ok(0),
+        }
+    }
+
+    pub fn as_u64(&self) -> Result<u64, DataConversionError> {
+        match self {
+            Data::String(v) => v.parse().map_err(|_| DataConversionError {
+                from_format: Some(DataFormat::String),
+                to_format: DataFormat::Int,
+            }),
+            Data::I32(v) => Ok(*v as u64),
+            Data::U32(v) => Ok(*v as u64),
+            Data::I64(v) => Ok(*v as u64),
+            Data::U64(v) => Ok(*v),
+            Data::F64(v) => Ok(*v as u64),
+            Data::Bool(v) => Ok(*v as u64),
             Data::Unknown => Ok(0),
         }
     }
@@ -57,7 +79,9 @@ impl Data {
                 to_format: DataFormat::Float,
             }),
             Data::I32(v) => Ok(*v as f64),
+            Data::U32(v) => Ok(*v as f64),
             Data::I64(v) => Ok(*v as f64),
+            Data::U64(v) => Ok(*v as f64),
             Data::F64(v) => Ok(*v),
             Data::Bool(v) => Ok(*v as i64 as f64),
             Data::Unknown => Ok(0.0),
@@ -71,7 +95,9 @@ impl Data {
                 to_format: DataFormat::Bool,
             }),
             Data::I32(v) => Ok(*v != 0),
+            Data::U32(v) => Ok(*v != 0),
             Data::I64(v) => Ok(*v != 0),
+            Data::U64(v) => Ok(*v != 0),
             Data::F64(v) => Ok(v.abs() > f64::EPSILON),
             Data::Bool(v) => Ok(*v),
             Data::Unknown => Ok(false),

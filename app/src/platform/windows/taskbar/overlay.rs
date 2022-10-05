@@ -108,7 +108,7 @@ impl TaskbarOverlay {
                 null_mut(),
             )
         };
-        
+
         if hwnd.0 == 0 {
             Err(::windows::core::Error::from_win32())?;
         }

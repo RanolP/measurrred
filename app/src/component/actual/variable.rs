@@ -1,10 +1,7 @@
-use declarrred::rt::{DataFormat, Data};
+use declarrred::rt::{Data, DataFormat};
 use serde::{de::DeserializeOwned, Deserialize};
 
-use crate::{
-    component::RenderContext,
-    util::serde::FromStrT,
-};
+use crate::{component::RenderContext, util::serde::FromStrT};
 // We need FromStrT<T> because of the limitation of serde, we only can receive
 // String-like types via EitherVariable<T>, So we should treat the string to fit
 // our requirements.
@@ -44,7 +41,10 @@ impl Variable {
         let content = match self.format {
             DataFormat::String => data.as_string().ok()?.to_string(),
             DataFormat::I32 | DataFormat::I64 | DataFormat::Int => {
-                format!("{}", data.as_int().ok()? / self.divide_by.0 as i64)
+                format!("{}", data.as_i64().ok()? / self.divide_by.0 as i64)
+            }
+            DataFormat::U32 | DataFormat::U64 | DataFormat::UInt => {
+                format!("{}", data.as_u64().ok()? / self.divide_by.0 as u64)
             }
             DataFormat::F64 | DataFormat::Float => format!(
                 "{:.precision$}",

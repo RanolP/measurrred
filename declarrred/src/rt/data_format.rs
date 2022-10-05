@@ -5,8 +5,11 @@ use serde::Deserialize;
 pub enum DataFormat {
     String,
     I32,
+    U32,
     I64,
+    U64,
     Int,
+    UInt,
     F64,
     Float,
     Bool,
