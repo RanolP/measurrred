@@ -1,8 +1,7 @@
-#![cfg(target_os = "windows")]
-
 use std::{collections::HashMap, ptr::null_mut};
 
 use declarrred::rt::{Data, DataFormat};
+use thiserror::Error;
 use windows::{
     core::PCWSTR,
     Win32::System::Performance::{
@@ -13,15 +12,24 @@ use windows::{
     },
 };
 
-use crate::data_source::DataSource;
+use crate::Knowhw;
 
-pub struct PdhDataSource {
+pub struct Pdh {
     query: isize,
     counter: HashMap<String, isize>,
 }
 
-impl PdhDataSource {
-    pub fn new<'a>() -> eyre::Result<PdhDataSource> {
+#[derive(Debug, Error)]
+pub enum PdhError {
+    #[error("Unsupported Format: {0:?}")]
+    UnsupportedFormat(DataFormat),
+
+    #[error("Win32 error: {0}")]
+    WindowsError(#[from] windows::core::Error),
+}
+
+impl Pdh {
+    pub fn new<'a>() -> Result<Pdh, PdhError> {
         let mut query = 0;
 
         let result = unsafe { PdhOpenQueryW(PCWSTR(null_mut()), 0, &mut query) };
@@ -29,19 +37,17 @@ impl PdhDataSource {
             Err(windows::core::Error::from_win32())?;
         }
 
-        Ok(PdhDataSource {
+        Ok(Pdh {
             query,
             counter: HashMap::new(),
         })
     }
 }
 
-impl DataSource for PdhDataSource {
-    fn name(&self) -> &'static str {
-        "windows/pdh"
-    }
+impl Knowhw for Pdh {
+    type Error = PdhError;
 
-    fn update(&self) -> eyre::Result<()> {
+    fn update(&self) -> Result<(), Self::Error> {
         if self.counter.len() == 0 {
             return Ok(());
         }
@@ -55,7 +61,7 @@ impl DataSource for PdhDataSource {
         Ok(())
     }
 
-    fn query(&mut self, query: &str, preferred_format: &DataFormat) -> eyre::Result<Data> {
+    fn query(&mut self, query: &str, preferred_format: &DataFormat) -> Result<Data, Self::Error> {
         let counter = if let Some(&counter) = self.counter.get(query) {
             counter
         } else {
@@ -77,7 +83,7 @@ impl DataSource for PdhDataSource {
                 counter,
                 match &preferred_format {
                     f @ DataFormat::String | f @ DataFormat::Bool => {
-                        eyre::bail!("Unsupported format: {:?}", f)
+                        return Err(PdhError::UnsupportedFormat(DataFormat::clone(f)))
                     }
                     DataFormat::I32 | DataFormat::U32 => PDH_FMT_LONG,
                     DataFormat::I64 | DataFormat::Int | DataFormat::U64 | DataFormat::UInt => {
@@ -107,7 +113,7 @@ impl DataSource for PdhDataSource {
         let data = unsafe {
             match &preferred_format {
                 f @ DataFormat::String | f @ DataFormat::Bool => {
-                    eyre::bail!("Unsupported format: {:?}", f)
+                    return Err(PdhError::UnsupportedFormat(DataFormat::clone(f)))
                 }
                 DataFormat::I32 => Data::I32(value.Anonymous.longValue),
                 DataFormat::U32 => Data::U32(value.Anonymous.longValue as _),

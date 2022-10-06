@@ -5,19 +5,19 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::{fs, thread};
 
+use app::{
+    component::SetupContext,
+    config::MeasurrredConfig,
+    data_source::{BoxedDataSource, KnowhwDataSource},
+    platform::taskbar::{TaskbarHandle, TaskbarOverlay},
+    system::HorizontalPosition,
+    widget::load_widget,
+};
+use knowhw::windows::{BatteryReport, GlobalMemoryStatus, Pdh};
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
 use tracing::{error, info, warn};
 use tracing_unwrap::ResultExt;
 use usvg::Options;
-
-use app::platform::taskbar::{TaskbarHandle, TaskbarOverlay};
-use app::system::HorizontalPosition;
-use app::widget::load_widget;
-use app::{
-    component::SetupContext,
-    config::MeasurrredConfig,
-    data_source::{BoxedDataSource, KnowhwDataSource, PdhDataSource},
-};
 
 mod log;
 
@@ -33,22 +33,20 @@ async fn main() -> eyre::Result<()> {
 
     info!("Config loaded.");
 
-    let data_source_list: Vec<BoxedDataSource> = vec![
-        Box::new(PdhDataSource::new().unwrap_or_log()),
-        Box::new(KnowhwDataSource(
-            "windows/global-memory-status",
-            knowhw::windows::GlobalMemoryStatus,
-        )),
-        Box::new(KnowhwDataSource(
-            "windows/battery-report",
-            knowhw::windows::BatteryReport,
-        )),
-    ];
-    let mut data_source = HashMap::<String, BoxedDataSource>::from_iter(
-        data_source_list
-            .into_iter()
-            .map(|data_source| (data_source.name().to_string(), data_source)),
-    );
+    let mut data_source: HashMap<String, BoxedDataSource> = HashMap::from_iter([
+        (
+            "windows/pdh".to_string(),
+            KnowhwDataSource::boxed(Pdh::new().unwrap_or_log()),
+        ),
+        (
+            "windows/global-memory-status".to_string(),
+            KnowhwDataSource::boxed(GlobalMemoryStatus),
+        ),
+        (
+            "windows/battery-report".to_string(),
+            KnowhwDataSource::boxed(BatteryReport),
+        ),
+    ]);
 
     info!("Initializing widgets");
     let mut widgets = Vec::new();
