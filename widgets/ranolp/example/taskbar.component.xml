@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <group>
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Black.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-ExtraBold.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Bold.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-SemiBold.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Medium.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Regular.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Light.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-ExtraLight.otf" />
-    <import-font url="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/public/static/Pretendard-Thin.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-Black.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-ExtraBold.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-Bold.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-SemiBold.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-Medium.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-Regular.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-Light.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-ExtraLight.otf" />
+    <import-font url="https://unpkg.com/pretendard@1.3.9/dist/public/static/Pretendard-Thin.otf" />
 
-    <import-font url="https://www.nerdfonts.com/assets/fonts/Symbols-2048-em%20Nerd%20Font%20Complete.ttf" />
+    <import-font url="https://www.nerdfonts.com/assets/fonts/Symbols-2048-em%20Nerd%20Font%20Complete.woff2" />
 
     <fetch-data 
         name="cpu%"
@@ -157,7 +157,7 @@
         <margin size="8px" />
         <vbox>
             <hbox y-align="center">
-                <text color="yellow" font-family="Symbols Nerd Font" font-weight="900">祝</text>
+                <text color="yellow" font-family="Symbols Nerd Font Mono" font-weight="900">&#xf0552;</text>
                 <margin size="6px" />
                 <text
                     font-family="Pretendard"
@@ -169,7 +169,7 @@
             </hbox>
             <set-position to="50vh" />
             <hbox y-align="center">
-               <text color="yellow" font-family="Symbols Nerd Font" font-weight="900"></text>
+               <text color="yellow" font-family="Symbols Nerd Font Mono" font-weight="900">&#xf01da;</text>
                 <margin size="6px" />
                 <text
                     font-family="Pretendard"

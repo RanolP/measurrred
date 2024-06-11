@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ptr::null_mut};
+use std::{cell::RefCell, collections::HashMap, ptr::null_mut};
 
 use declarrred::rt::{Data, DataFormat};
 use thiserror::Error;
@@ -13,6 +13,10 @@ use windows::{
 };
 
 use crate::Knowhw;
+
+thread_local! {
+    static QUERIES: RefCell<HashMap<String, PCWSTR>> = RefCell::new(HashMap::new());
+}
 
 pub struct Pdh {
     query: isize,
@@ -62,67 +66,83 @@ impl Knowhw for Pdh {
     }
 
     fn query(&mut self, query: &str, preferred_format: &DataFormat) -> Result<Data, Self::Error> {
-        let counter = if let Some(&counter) = self.counter.get(query) {
-            counter
-        } else {
-            let mut counter = 0;
-            let result =
-                unsafe { PdhAddEnglishCounterW(self.query, query.clone(), 0, &mut counter) };
+        QUERIES.with_borrow_mut(|queries| {
+            let counter = if let Some(&counter) = self.counter.get(query) {
+                counter
+            } else {
+                let query_pcwstr = queries.entry(query.to_string()).or_insert_with(|| {
+                    let leak = Box::leak(Box::new(
+                        [
+                            query.to_string().encode_utf16().collect::<Vec<_>>(),
+                            vec![0],
+                        ]
+                        .concat(),
+                    ));
+                    PCWSTR(leak.as_ptr() as _)
+                });
+                let mut counter = 0;
+                let result = unsafe {
+                    PdhAddEnglishCounterW(self.query, query_pcwstr.clone(), 0, &mut counter)
+                };
 
-            if result != 0 {
-                Err(::windows::core::Error::from_win32())?;
+                if result != 0 {
+                    println!("{:x}", result);
+                    Err(::windows::core::Error::from_win32())?;
+                }
+
+                self.counter.insert(query.to_string(), counter);
+                counter
+            };
+
+            let mut value = PDH_FMT_COUNTERVALUE::default();
+            let result = unsafe {
+                PdhGetFormattedCounterValue(
+                    counter,
+                    match &preferred_format {
+                        f @ DataFormat::String | f @ DataFormat::Bool => {
+                            return Err(PdhError::UnsupportedFormat(DataFormat::clone(f)))
+                        }
+                        DataFormat::I32 | DataFormat::U32 => PDH_FMT_LONG,
+                        DataFormat::I64 | DataFormat::Int | DataFormat::U64 | DataFormat::UInt => {
+                            PDH_FMT_LARGE
+                        }
+                        DataFormat::F64 | DataFormat::Float => PDH_FMT_DOUBLE,
+                    },
+                    None,
+                    &mut value,
+                )
+            };
+            match result {
+                0 => {}
+                PDH_CALC_NEGATIVE_DENOMINATOR
+                | PDH_INVALID_DATA
+                | PDH_NO_DATA
+                | PDH_CSTATUS_INVALID_DATA
+                | PDH_CALC_NEGATIVE_VALUE => {
+                    return Ok(Data::Unknown);
+                }
+                _ => {
+                    eprintln!("{:x}", result);
+                    Err(::windows::core::Error::from_win32())?;
+                }
             }
 
-            self.counter.insert(query.to_string(), counter);
-            counter
-        };
-
-        let mut value = PDH_FMT_COUNTERVALUE::default();
-        let result = unsafe {
-            PdhGetFormattedCounterValue(
-                counter,
+            let data = unsafe {
                 match &preferred_format {
                     f @ DataFormat::String | f @ DataFormat::Bool => {
                         return Err(PdhError::UnsupportedFormat(DataFormat::clone(f)))
                     }
-                    DataFormat::I32 | DataFormat::U32 => PDH_FMT_LONG,
-                    DataFormat::I64 | DataFormat::Int | DataFormat::U64 | DataFormat::UInt => {
-                        PDH_FMT_LARGE
+                    DataFormat::I32 => Data::I32(value.Anonymous.longValue),
+                    DataFormat::U32 => Data::U32(value.Anonymous.longValue as _),
+                    DataFormat::I64 | DataFormat::Int => Data::I64(value.Anonymous.largeValue),
+                    DataFormat::U64 | DataFormat::UInt => {
+                        Data::U64(value.Anonymous.largeValue as _)
                     }
-                    DataFormat::F64 | DataFormat::Float => PDH_FMT_DOUBLE,
-                },
-                null_mut(),
-                &mut value,
-            )
-        };
-        match result {
-            0 => {}
-            PDH_CALC_NEGATIVE_DENOMINATOR
-            | PDH_INVALID_DATA
-            | PDH_NO_DATA
-            | PDH_CSTATUS_INVALID_DATA
-            | PDH_CALC_NEGATIVE_VALUE => {
-                return Ok(Data::Unknown);
-            }
-            _ => {
-                println!("{:x}", result);
-                Err(::windows::core::Error::from_win32())?;
-            }
-        }
-
-        let data = unsafe {
-            match &preferred_format {
-                f @ DataFormat::String | f @ DataFormat::Bool => {
-                    return Err(PdhError::UnsupportedFormat(DataFormat::clone(f)))
+                    DataFormat::F64 | DataFormat::Float => Data::F64(value.Anonymous.doubleValue),
                 }
-                DataFormat::I32 => Data::I32(value.Anonymous.longValue),
-                DataFormat::U32 => Data::U32(value.Anonymous.longValue as _),
-                DataFormat::I64 | DataFormat::Int => Data::I64(value.Anonymous.largeValue),
-                DataFormat::U64 | DataFormat::UInt => Data::U64(value.Anonymous.largeValue as _),
-                DataFormat::F64 | DataFormat::Float => Data::F64(value.Anonymous.doubleValue),
-            }
-        };
+            };
 
-        Ok(data)
+            Ok(data)
+        })
     }
 }

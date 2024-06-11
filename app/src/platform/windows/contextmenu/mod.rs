@@ -54,7 +54,7 @@ impl ContextMenu {
 
     pub fn handle_message(&mut self, message: usize) -> windows::core::Result<()> {
         dbg!(message);
-        (self.handler_list[(message - WM_USER as usize)])()
+        (self.handler_list[message - WM_USER as usize])()
     }
 
     pub fn hide(&self) {}

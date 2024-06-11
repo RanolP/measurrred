@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-time = { version = "0.3.9", features = ["serde"] }
+time = { version = "0.3", features = ["serde"] }
 
-thiserror = "1.0.30"
+thiserror = "1"
 
-serde = { version = "1.0.136", features = ["derive"] }
-toml = "0.5.9"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
 
-url = "2.2.2"
-async-std = "1.11.0"
-futures = "0.3.21"
+url = "2"
+async-std = "1"
+futures = "0.3"

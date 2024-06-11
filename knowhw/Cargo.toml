@@ -7,9 +7,20 @@ edition = "2021"
 
 [dependencies]
 declarrred = { path = "../declarrred" }
-strum = { version = "0.24", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 thiserror = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies.windows]
-version = "0.35"
-features = []
+version = "0.57"
+features = [
+    "Win32",
+    "Win32_System",
+    "Win32_System_Performance",
+    "Win32_System_SystemInformation",
+
+    "Devices",
+    "Devices_Power",
+
+    "System",
+    "System_Power",
+]

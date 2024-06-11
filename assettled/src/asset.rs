@@ -1,10 +1,10 @@
 use std::path::{Path, PathBuf};
 
 use async_std::{
-    fs::{create_dir_all, File},
+    fs::{self, create_dir_all, File},
     io::ReadExt,
 };
-use futures::{future::try_join_all, AsyncWriteExt, TryStreamExt};
+use futures::{future::try_join_all, AsyncWriteExt};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use time::OffsetDateTime;
@@ -49,15 +49,10 @@ impl AssetId {
         if !self.meta_path().exists() {
             return Ok(None);
         }
-        let file = File::open(self.meta_path())
+        let s = fs::read_to_string(self.meta_path())
             .await
             .map_err(|e| self.io_error(e))?;
-        let bytes: Vec<u8> = file
-            .bytes()
-            .try_collect::<Vec<_>>()
-            .await
-            .map_err(|e| self.io_error(e))?;
-        Ok(Some(toml::from_slice(&bytes).map_err(|e| {
+        Ok(Some(toml::from_str(&s).map_err(|e| {
             AssetError::DeserializeMeta(self.0.clone(), e)
         })?))
     }
@@ -75,7 +70,8 @@ impl Asset {
                 .into_iter()
                 .map(|id| Asset::new(id, None))
                 .collect::<Vec<_>>(),
-        ).await
+        )
+        .await
     }
 
     pub async fn new(id: String, name: Option<String>) -> Result<Self, AssetError> {
@@ -205,8 +201,7 @@ mod time_toml_bridge {
                 Offset::Z
             } else {
                 Offset::Custom {
-                    hours: offset.whole_hours(),
-                    minutes: offset.minutes_past_hour().abs() as u8,
+                    minutes: offset.whole_minutes(),
                 }
             }),
         })
@@ -240,9 +235,9 @@ mod time_toml_bridge {
                     .map_err(|e| serde::de::Error::custom(e))?,
             );
         }
-        if let Some(Offset::Custom { hours, minutes }) = datetime.offset {
+        if let Some(Offset::Custom { minutes }) = datetime.offset {
             result = result.replace_offset(
-                time::UtcOffset::from_hms(hours, minutes as i8, 0)
+                time::UtcOffset::from_whole_seconds(minutes as i32 * 60)
                     .map_err(|e| serde::de::Error::custom(e))?,
             );
         }

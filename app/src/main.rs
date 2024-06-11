@@ -105,7 +105,7 @@ async fn main() -> eyre::Result<()> {
 
     let mut overlay = TaskbarOverlay::new(taskbar)?;
     overlay.accept_config(&measurrred_config)?;
-    overlay.show();
+    overlay.show()?;
 
     info!(
         "measurrred has started in {}s",
@@ -127,6 +127,7 @@ async fn main() -> eyre::Result<()> {
                     .get_mut(&query.source)
                     .ok_or(eyre::eyre!("Unknown data source: {}", &query.source))
                     .and_then(|source| source.query(&query.query, &query.format))
+                    .map_err(|e| eyre::eyre!("error while querying {}: {}", query.query, e))
                     .unwrap();
                 variables.insert(query.name.clone(), data);
             }
@@ -150,23 +151,25 @@ async fn main() -> eyre::Result<()> {
             );
             let zoom = overlay_w.zoom()?;
             for widget in widgets.iter_mut() {
-                widget.render(
-                    &measurrred_config,
-                    &usvg_options,
-                    &mut pixmap,
-                    match widget.x {
-                        HorizontalPosition::Right(_)
-                            if measurrred_config
-                                .viewbox_tuning
-                                .respect_tray_area_when_right_align =>
-                        {
-                            overlay_w.target.rebar_rect()?
-                        }
-                        _ => overlay_w.target.rect()?,
-                    },
-                    zoom,
-                    &variables,
-                )?;
+                widget
+                    .render(
+                        &measurrred_config,
+                        &usvg_options,
+                        &mut pixmap,
+                        match widget.x {
+                            HorizontalPosition::Right(_)
+                                if measurrred_config
+                                    .viewbox_tuning
+                                    .respect_tray_area_when_right_align =>
+                            {
+                                overlay_w.target.rebar_rect()?
+                            }
+                            _ => overlay_w.target.rect()?,
+                        },
+                        zoom,
+                        &variables,
+                    )
+                    .unwrap();
             }
             overlay_w.accept_pixmap(pixmap)?;
             overlay_w.redraw()?;

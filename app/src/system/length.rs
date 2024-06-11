@@ -97,8 +97,8 @@ impl Length {
     pub fn translate_to_px(&self, viewbox_width: f64, viewbox_height: f64) -> f64 {
         match self {
             Length::Pixel(px) => *px as f64,
-            Length::ViewboxHeight(vh) => (vh * viewbox_height / 100.0),
-            Length::ViewboxWidth(vw) => (vw * viewbox_width / 100.0),
+            Length::ViewboxHeight(vh) => vh * viewbox_height / 100.0,
+            Length::ViewboxWidth(vw) => vw * viewbox_width / 100.0,
         }
     }
 

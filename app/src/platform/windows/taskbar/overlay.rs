@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ptr::null_mut, sync::RwLock};
 
-use once_cell::sync::Lazy;
+use once_cell::sync::{Lazy, OnceCell};
 use thiserror::Error;
 use tiny_skia::Pixmap;
 use tracing::info;
@@ -11,15 +11,15 @@ use windows::{
         Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM},
         Graphics::Gdi::{
             BeginPaint, BitBlt, CreateBitmap, CreateCompatibleDC, CreateSolidBrush, DeleteDC,
-            DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, SetBkMode, HRGN,
-            PAINTSTRUCT, RDW_INVALIDATE, RDW_UPDATENOW, SRCPAINT, TRANSPARENT,
+            DeleteObject, EndPaint, FillRect, RedrawWindow, SelectObject, HRGN, PAINTSTRUCT,
+            RDW_INVALIDATE, RDW_UPDATENOW, SRCPAINT,
         },
         System::LibraryLoader::GetModuleHandleW,
         UI::WindowsAndMessaging::{
             CreateWindowExW, DefWindowProcW, DispatchMessageW, GetClientRect, GetMessageW,
             MoveWindow, PostQuitMessage, RegisterClassW, SetLayeredWindowAttributes, ShowWindow,
             TranslateMessage, CS_HREDRAW, CS_VREDRAW, HMENU, LWA_COLORKEY, MSG, SW_SHOW,
-            WM_DESTROY, WM_DPICHANGED, WM_PAINT, WNDCLASSW, WS_CHILD, WS_EX_LAYERED, WS_EX_TOPMOST,
+            WM_DESTROY, WM_DPICHANGED, WM_PAINT, WNDCLASSW, WS_EX_LAYERED, WS_EX_TOPMOST, WS_POPUP,
             WS_VISIBLE,
         },
     },
@@ -64,9 +64,21 @@ pub enum TaskbarOverlayError {
     TrayIcon(#[from] TrayIconError),
 }
 
+const CLASS_NAME_CELL: OnceCell<PCWSTR> = OnceCell::new();
+
 impl TaskbarOverlay {
-    const CLASS_NAME_STR: &'static str = "MeasurredTaskbar";
-    const CLASS_NAME: PCWSTR = PCWSTR(TaskbarOverlay::CLASS_NAME_STR.as_ptr() as _);
+    pub fn wnd_class_name() -> PCWSTR {
+        CLASS_NAME_CELL
+            .get_or_init(|| {
+                PCWSTR(
+                    Box::leak(Box::new(
+                        "MeasurredTaskbar\0".encode_utf16().collect::<Vec<_>>(),
+                    ))
+                    .as_ptr() as _,
+                )
+            })
+            .clone()
+    }
 
     pub fn new(target: TaskbarHandle) -> Result<Self, TaskbarOverlayError> {
         become_dpi_aware()?;
@@ -82,7 +94,7 @@ impl TaskbarOverlay {
         let class = WNDCLASSW {
             lpfnWndProc: Some(wndproc),
             hInstance: instance,
-            lpszClassName: TaskbarOverlay::CLASS_NAME,
+            lpszClassName: TaskbarOverlay::wnd_class_name(),
             style: CS_HREDRAW | CS_VREDRAW,
             ..Default::default()
         };
@@ -94,10 +106,10 @@ impl TaskbarOverlay {
 
         let hwnd = unsafe {
             CreateWindowExW(
-                WS_EX_TOPMOST | WS_EX_LAYERED,
-                TaskbarOverlay::CLASS_NAME,
+                WS_EX_LAYERED | WS_EX_TOPMOST,
+                TaskbarOverlay::wnd_class_name(),
                 "measurrred",
-                WS_VISIBLE | WS_CHILD,
+                WS_VISIBLE | WS_POPUP,
                 0,
                 0,
                 0,
@@ -108,7 +120,6 @@ impl TaskbarOverlay {
                 null_mut(),
             )
         };
-
         if hwnd.0 == 0 {
             Err(::windows::core::Error::from_win32())?;
         }
@@ -164,8 +175,9 @@ impl TaskbarOverlay {
         Ok(())
     }
 
-    pub fn show(&self) -> bool {
-        unsafe { ShowWindow(self.hwnd, SW_SHOW).as_bool() }
+    pub fn show(&self) -> eyre::Result<()> {
+        unsafe { ShowWindow(self.hwnd, SW_SHOW) }.ok()?;
+        Ok(())
     }
 
     pub fn redraw(&self) -> eyre::Result<()> {
@@ -225,8 +237,8 @@ impl ActualTaskbarOverlay {
         unsafe {
             MoveWindow(
                 self.hwnd,
-                0,
-                0,
+                target_rect.x(),
+                target_rect.y(),
                 target_rect.width(),
                 target_rect.height(),
                 true,
@@ -251,7 +263,6 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             HandleResult::Ok(result) => return result,
             HandleResult::MessageMismatch => {}
             HandleResult::ContextMenuAction => {
-                drop(tray);
                 drop(tray_map);
 
                 let mut tray_map = TRAY_INSTANCES.write().unwrap_or_log();
@@ -286,7 +297,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             GetClientRect(hwnd, &mut rect);
             let mut ps = PAINTSTRUCT::default();
             let hdc = BeginPaint(hwnd, &mut ps);
-            SetBkMode(&hdc, TRANSPARENT);
+            // SetBkMode(&hdc, TRANSPARENT);
 
             let taskbar_rect = overlay.target.rect().unwrap();
             let width = taskbar_rect.width();

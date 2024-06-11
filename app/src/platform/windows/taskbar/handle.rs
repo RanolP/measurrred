@@ -1,10 +1,13 @@
 use std::{ffi::OsString, os::windows::prelude::OsStringExt, ptr::null_mut};
 
 use tracing_unwrap::OptionExt;
-use windows::{Win32::{
-    Foundation::{BOOL, HWND, LPARAM, RECT},
-    UI::WindowsAndMessaging::{EnumWindows, FindWindowExW, GetClassNameW, GetWindowRect},
-}, core::PCWSTR};
+use windows::{
+    core::PCWSTR,
+    Win32::{
+        Foundation::{BOOL, HWND, LPARAM, RECT},
+        UI::WindowsAndMessaging::{EnumWindows, FindWindowExW, GetClassNameW, GetWindowRect},
+    },
+};
 
 use crate::{platform::monitor::MonitorHandle, system::Rect};
 
@@ -12,6 +15,7 @@ use crate::{platform::monitor::MonitorHandle, system::Rect};
 pub struct TaskbarHandle {
     hwnd: HWND,
     rebar_hwnd: HWND,
+    tray_notify_hwnd: HWND,
     monitor: MonitorHandle,
 }
 
@@ -26,12 +30,7 @@ impl TaskbarHandle {
 
                 let mut name = vec![0u16; CLASS_NAME_LENGTH];
 
-                let len = unsafe {
-                    GetClassNameW(
-                        hwnd,
-                        &mut name,
-                    ) as usize
-                };
+                let len = unsafe { GetClassNameW(hwnd, &mut name) as usize };
 
                 if len == 0 {
                     return false;
@@ -63,16 +62,23 @@ impl TaskbarHandle {
                 let rebar_hwnd =
                     unsafe { FindWindowExW(hwnd, HWND(0), "ReBarWindow32", PCWSTR(null_mut())) };
                 if rebar_hwnd.0 == 0 {
-                    Err(windows::core::Error::from_win32())
-                } else {
-                    Ok(TaskbarHandle {
-                        hwnd,
-                        rebar_hwnd,
-                        // We knew that the taskbar is belong to the monitor.
-                        // It cannot be moved out to other monitors, isn't it?
-                        monitor: MonitorHandle::from_hwnd(hwnd),
-                    })
+                    Err(windows::core::Error::from_win32())?
                 }
+
+                let tray_notify_hwnd =
+                    unsafe { FindWindowExW(hwnd, HWND(0), "TrayNotifyWnd", PCWSTR(null_mut())) };
+                if tray_notify_hwnd.0 == 0 {
+                    Err(windows::core::Error::from_win32())?
+                }
+
+                Ok(TaskbarHandle {
+                    hwnd,
+                    rebar_hwnd,
+                    tray_notify_hwnd,
+                    // We knew that the taskbar is belong to the monitor.
+                    // It cannot be moved out to other monitors, isn't it?
+                    monitor: MonitorHandle::from_hwnd(hwnd),
+                })
             })
             .collect()
     }
@@ -93,8 +99,20 @@ impl TaskbarHandle {
     }
 
     pub fn rebar_rect(&self) -> windows::core::Result<Rect> {
+        let whole = self.rect()?;
+        let tray = self.tray_notify_rect()?;
+
+        Ok(Rect::from_xywh(
+            whole.x(),
+            whole.y(),
+            whole.width() - tray.width(),
+            whole.height(),
+        ))
+    }
+
+    pub fn tray_notify_rect(&self) -> windows::core::Result<Rect> {
         let mut result = RECT::default();
-        unsafe { GetWindowRect(self.rebar_hwnd, &mut result) }.ok()?;
+        unsafe { GetWindowRect(self.tray_notify_hwnd, &mut result) }.ok()?;
 
         Ok(result.into())
     }

@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use async_stream::try_stream;
 use serde::Deserialize;
 use url::Url;
@@ -53,6 +55,11 @@ impl ComponentAction for ImportFont {
             yield JobStage::Completed {
                 label: format!("Loaded {}!", url),
                 finalizer: Box::new(move |context| {
+                    let data = if woff2_patched::decode::is_woff2(&data) {
+                        woff2_patched::convert_woff2_to_ttf(&mut Cursor::new(data))?
+                    } else {
+                        data
+                    };
                     context.usvg_options.fontdb.load_font_data(data);
                     Ok(())
                 })

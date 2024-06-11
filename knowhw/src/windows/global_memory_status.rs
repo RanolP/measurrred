@@ -60,11 +60,7 @@ impl Knowhw for GlobalMemoryStatus {
         let mut mem = MEMORYSTATUSEX::default();
         mem.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
 
-        let result = unsafe { GlobalMemoryStatusEx(&mut mem) };
-
-        if result.0 == 0 {
-            Err(::windows::core::Error::from_win32())?;
-        }
+        unsafe { GlobalMemoryStatusEx(&mut mem) }?;
 
         let data = match query {
             GlobalMemoryStatusQuery::MemoryLoad => Data::U32(mem.dwMemoryLoad),

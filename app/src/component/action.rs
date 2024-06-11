@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use declarrred::rt::{DataFormat, Data};
+use declarrred::rt::{Data, DataFormat};
 use usvg::Options;
 
 use crate::config::MeasurrredConfig;

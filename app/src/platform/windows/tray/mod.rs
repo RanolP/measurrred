@@ -2,20 +2,23 @@ use std::ptr::null_mut;
 
 use thiserror::Error;
 use tracing_unwrap::ResultExt;
-use windows::{Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM},
-    System::LibraryLoader::GetModuleHandleW,
-    UI::{
-        Shell::{
-            Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE,
-            NOTIFYICONDATAW, NOTIFYICONDATAW_0, NOTIFYICON_VERSION_4,
-        },
-        WindowsAndMessaging::{
-            DefWindowProcW, DestroyWindow, GetCursorPos, LoadIconW, WM_COMMAND, WM_LBUTTONDBLCLK,
-            WM_RBUTTONDOWN, WM_USER,
+use windows::{
+    core::PCWSTR,
+    Win32::{
+        Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM},
+        System::LibraryLoader::GetModuleHandleW,
+        UI::{
+            Shell::{
+                Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE,
+                NOTIFYICONDATAW, NOTIFYICONDATAW_0, NOTIFYICON_VERSION_4,
+            },
+            WindowsAndMessaging::{
+                DefWindowProcW, DestroyWindow, GetCursorPos, LoadIconW, WM_COMMAND,
+                WM_LBUTTONDBLCLK, WM_RBUTTONDOWN, WM_USER,
+            },
         },
     },
-}, core::PCWSTR};
+};
 
 use crate::platform::contextmenu::ContextMenu;
 
