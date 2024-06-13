@@ -92,29 +92,21 @@ impl TaskbarHandle {
     }
 
     pub fn rect(&self) -> windows::core::Result<Rect> {
-        let mut result = RECT::default();
-        unsafe { GetWindowRect(self.hwnd, &mut result) }.ok()?;
+        let mut shell = RECT::default();
+        unsafe { GetWindowRect(self.hwnd, &mut shell) }.ok()?;
 
-        Ok(result.into())
-    }
+        let mut rebar = RECT::default();
+        unsafe { GetWindowRect(self.rebar_hwnd, &mut rebar) }.ok()?;
 
-    pub fn rebar_rect(&self) -> windows::core::Result<Rect> {
-        let whole = self.rect()?;
-        let tray = self.tray_notify_rect()?;
+        let mut tray = RECT::default();
+        unsafe { GetWindowRect(self.tray_notify_hwnd, &mut tray) }.ok()?;
 
         Ok(Rect::from_xywh(
-            whole.x(),
-            whole.y(),
-            whole.width() - tray.width(),
-            whole.height(),
+            shell.left,
+            rebar.top,
+            tray.left - shell.left,
+            shell.bottom,
         ))
-    }
-
-    pub fn tray_notify_rect(&self) -> windows::core::Result<Rect> {
-        let mut result = RECT::default();
-        unsafe { GetWindowRect(self.tray_notify_hwnd, &mut result) }.ok()?;
-
-        Ok(result.into())
     }
 
     pub fn monitor(&self) -> &MonitorHandle {

@@ -16,7 +16,7 @@ use app::{
 use knowhw::windows::{BatteryReport, GlobalMemoryStatus, Pdh};
 use tiny_skia::{Paint, Pixmap, Rect, Transform};
 use tracing::{error, info, warn};
-use tracing_unwrap::ResultExt;
+use tracing_unwrap::{ResultExt, OptionExt};
 use usvg::Options;
 
 mod log;
@@ -135,7 +135,7 @@ async fn main() -> eyre::Result<()> {
             let taskbar_rect = overlay_w.target.rect()?;
             let width = taskbar_rect.width();
             let height = taskbar_rect.height();
-            let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap();
+            let mut pixmap = Pixmap::new(width as u32, height as u32).unwrap_or_log();
             let mut paint = Paint::default();
             paint.set_color(
                 measurrred_config
@@ -156,16 +156,7 @@ async fn main() -> eyre::Result<()> {
                         &measurrred_config,
                         &usvg_options,
                         &mut pixmap,
-                        match widget.x {
-                            HorizontalPosition::Right(_)
-                                if measurrred_config
-                                    .viewbox_tuning
-                                    .respect_tray_area_when_right_align =>
-                            {
-                                overlay_w.target.rebar_rect()?
-                            }
-                            _ => overlay_w.target.rect()?,
-                        },
+                        overlay_w.target.rect()?,
                         zoom,
                         &variables,
                     )
