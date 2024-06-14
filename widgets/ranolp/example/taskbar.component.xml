@@ -16,7 +16,7 @@
         name="cpu%"
 
         source="windows/pdh"
-        query="\Processor(_Total)\% Processor Time"
+        query="\Processor Information(_Total)\% Processor Utility"
         format="float"
     />
     <fetch-data 
